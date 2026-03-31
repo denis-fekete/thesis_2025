@@ -1,0 +1,324 @@
+
+\chapter{Implementation of CV.ILIBG Mobile library}
+This chapter starts with the general design choices, such as operating system, programming language, and choosing an inference engine for object detection. The second half focuses on the implementation design of the library at a higher abstraction level.
+
+The goal of this library is to provide an interface that simplifies the process of creating a mobile application that uses object detection with the on device camera to detect game objects. The library should help develop final applications, prototypes, and proof-of-concept applications. All of the above mentioned goals are achieved while giving developers a modular interface that is expandable and not limiting for things such as user interface. 
+
+The main focus of the library is object detection, while other parts of the application, such as the user interface, navigation, or saving user data, are not part of the library and need to be implemented by the developers.
+
+
+\section{Choosing the inference engine}
+\label{chosingInferenceEngine}
+To deploy a deep learning–based object detection model on embedded or mobile devices, a dedicated inference engine is required. Inference engines or runtimes are responsible for executing trained neural network models by loading the model parameters, processing input data, and producing task-specific outputs. In this work, the runtime executes a convolutional neural network–based object detection architecture to perform real-time object detection on image data.
+
+OpenCV, with its \textit{Dnn} package, can be used as an inference engine, however, after the first trial deployment, the performance was not satisfactory for a real-time detector, and further research was needed. 
+
+More popular and widely used are TensorFlow Lite and ONNX (Open Neural Network Exchange) Runtime. Both projects are backed by big companies such as Google and Microsoft, respectively, and both support mobile, sometimes also referred to as edge devices. A study from 2023 \cite{Ren2023_ONNX_TensorFlow_BScan} suggests that ONNX performs better on both CPU and GPU. The other blog post \cite{aimtechnoOnnxTFcomparison} from 2025 shows that the gap between the performance of the engines is smaller, and both have their pros and cons. The main difference is that ONNX Runtime is designed as an open standard and is better suited for multi-platform development, whereas TensorFlow Lite can benefit from Google's ecosystem.
+
+Overall, the ONNX platform seems like a better choice as the core of the library, especially because of its open and multi-platform nature. However, since the library was made to be expandable, adding another inference engine is not out of the question.
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+\section{OpenCV}
+OpenCV \cite{opencv} is a multi-platform and multi-language open source library that provides algorithms for computer vision, machine learning, image manipulation, and many more. It is a well established library that is used by many companies and institutions, such as NASA. It supports Python, which is also used by desktop applications for creating datasets and training models, but it also supports Java/Kotlin on mobile devices.  For this project, it was mostly used for image manipulation, both for creating synthetic data and for resizing and normalizing images from the camera to the correct format expected by the inference runtime that runs the object detection models.
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+
+\section{Android development with Kotlin}
+This section explores the choices that were made for selecting the operating system and environment used for developing the library. The general knowledge about Android and Kotlin was mostly gained from the Kotlin documentation \cite{kotlinDocs}, the Android API documentation \cite{androidDocs}, and ARM's online course \cite{armTutorial} alongside the YouTube version of the same course \cite{armYtTutorial}. for Android application development using the OpenCV camera, which was used as a starting point.
+
+\subsection{Operating system}
+Operating systems for mobile phones are mostly divided into two categories: those that use Android and those that use iOS. Since 2020, the smartphone market share has been steadily at 70\% \cite{phoneOsStatistics} in favor of Android over iOS. For this reason, Android was chosen as the target operating system.
+
+
+\subsection{Kotlin and Java}
+
+For a long time, Java was the main programming language for Android development; however, that changed in 2019 \cite{androidKotlinBlog} when Google announced that it would be introducing the Kotlin language. As the blog claims, Kotlin code is easier to understand, safer, particularly for null exceptions, has exceptional concurrency handling, and is primarily interoperable with Java. The last point is the most crucial because it allows Kotlin code to use Java code and vise versa. This means that using Kotlin results in less code overhead while keeping all the benefits and support of the Java packages that have been created over the long time of Java's existence. For this reason, Kotlin was chosen as the main programming language.
+
+
+\subsection{Integrated Development Environment}
+The most popular development environments (hereafter referred to as IDE) are Android Studio and IntelliJ Idea with Android development integrations. The developers of IntelliJ Idea posted a blog \cite{androidStudioAndIdea}
+that explained the situation with Android Studio and IntelliJ Idea. The blog stated that Android Studio is based on IntelliJ Idea and uses the same internals. At first glance, both IDEs are similar; therefore, the choice was mostly a matter of personal preference, and I, as the author, leaned toward IntelliJ Idea due to previous experience.
+
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+\section{Application and activities}
+\label{applicationClass}
+
+The \texttt{Application()} class is the starting point for all Android applications. In most projects, it is not necessary to use an \texttt{Application()} class, as it will be generated automatically. The CV.ILIBG, however, requires its services (helper classes responsible for loading assets, see \ref{Services}) to be initialized with a reference to the application class. Developers can either define these services manually or simply derive an application class from the \texttt{cv.CV.ILIBG.CVILIBGApplication}. The last setup for the application class is to also define \texttt{registerModels()} inside the derived class and register object detection models (see \ref{DetectorRegistry}).
+
+
+\subsection{Activity classes and permissions to use camera}
+The Android API uses the \texttt{Activity} \footnote{Android Activity: \url{https://developer.android.com/reference/android/app/Activity}} class for creating task specific parts of applications. Android usually uses \texttt{AppCompatActivity()} or \texttt{Fragments} \footnote{Android Fragments \url{https://developer.android.com/guide/fragments}} from AndroidX \footnote{AndroidX is a refactored version of an Android API that is not bundled with the operating system: \url{https://developer.android.com/jetpack/androidx}}, for displaying content to users. 
+
+CV.ILIBG does not interfere with this, nor does it provide any help with managing or navigating the activities. However, it is required for either the first activity that will be launched by the application or the activity that hosts the camera to request permissions to use it. 
+
+That can be done by using \texttt{PermissionService} , which contains methods for that. This request should be placed in the overridden \texttt{onCreate()} method.
+
+\begin{lstlisting}
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        PermissionService.checkCameraPermission(this, this)
+        
+        // other code
+    }
+\end{lstlisting}
+
+These permissions also need to be added to the project's \texttt{AndroidManifest.xml} \footnote{Android permissions: \url{https://developer.android.com/guide/topics/manifest/manifest-intro\#perms}} under the \texttt{manifest} element.
+
+\begin{lstlisting}
+    <?xml version="1.0" encoding="utf-8"?>
+    <manifest xmlns:android = "http://schemas.android.com/apk/res/android">
+        <uses-permission android:name = "android.permission.CAMERA"/>
+    </manifest>
+\end{lstlisting}
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+\subsection{AbstractCameraFragment()}
+\label{AbstractCameraFragment}
+\texttt{AbstractCameraFragment()} is a derived class from the Android Fragment that sets up 
+\texttt{CameraController} (see \ref{CameraController}) and other user interface elements that are required by the controller. This abstract class contains the bare minimum code for \texttt{CameraController} to work. Developers should use it as a base building block for the part of the application that will display the live feed from the camera along with detection on top of it.
+
+The \texttt{CameraController} class also requires user interface elements that will be used by the controller. 
+
+\label{AbstractCameraFragmentElements}
+\bigskip
+\begin{minipage}{\textwidth}
+\textbf{Format:} layout id: class or derived class
+
+\begin{itemize}
+  \item cameraxView: \texttt{androidx.camera.view.PreviewView}
+  \item detectionOverlay: \texttt{DetectionOverlay}
+  \item metricsOverlay: \texttt{MetricsOverlay}
+  \item preciseDetectionButton: \texttt{ImageButton}
+  \item exitPreciseDetectionButton: \texttt{ImageButton}
+\end{itemize}
+\end{minipage}
+\bigskip
+
+Elements can be added by using the Jetpack Compose toolkit \footnote{Jetpack compose: \url{https://developer.android.com/compose}} or by using XML-based view layouts. While both approaches are valid and the choice depends on the developer’s preference, they must provide elements that can be accessed by the \texttt{AbstractCameraFragment}. All of the listed elements with correct layout IDs and classes, or classes that are derived from them, must be found under the class derived from the \texttt{AbstractCameraFragment}. Should the developer decide to use different IDs, it is required to override the \texttt{initViews()} method with the correct \textit{R.id.ID} :
+\bigskip
+\begin{lstlisting}
+protected open fun initViews(view: View) {
+    cameraxView = view.findViewById<PreviewView>(R.id.ID)
+    detectionOverlay = view.findViewById<DetectionOverlay>(R.id.ID)
+    metricsOverlay = view.findViewById<MetricsOverlay>(R.id.ID)
+    startQualityDetectionButton = view.findViewById<ImageButton>(R.id.ID)
+    endQualityDetectionButton = view.findViewById<ImageButton>(R.id.ID)
+}
+\end{lstlisting}
+\bigskip
+
+\label{CameraFragmentOverlays}
+In order for detections to be visible on top of the \texttt{previewView}, it is required that the camera fragment layout places the preview and overlays on top of each other with the same size.
+
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=0.4\textwidth]{obrazky-figures/camera_fragment_overlay.pdf}
+	\caption[Camera preview, detection overlay, metrics layout]{Layout of user interface elements required by the \texttt{CameraController} where detections are on top of the preview of the camera.}
+\end{figure}
+
+% ===========================================================================================
+
+% ===========================================================================================
+ 
+\section{Camera Controller}
+\label{CameraController}
+
+The \texttt{CameraController} is a class that is responsible for managing the camera and  initializing the analysis of the image data from the camera. The controller uses Androids \texttt{CameraX} \footnote{CameraX overview: \url{https://developer.android.com/media/camera/camerax}} and \texttt{CameraProvider} \footnote{CameraProvider API reference: \url{https://developer.android.com/reference/androidx/camera/lifecycle/ProcessCameraProvider}}, which is a modern solution for capturing and analyzing images from the smartphones camera. 
+The \texttt{CameraProvider} is set up with two \textit{use cases}: image preview using \texttt{PreviewView} \footnote{Android Preview: \url{https://developer.android.com/reference/androidx/camera/core/Preview}} \footnote{Android PreviewView: \url{https://developer.android.com/reference/androidx/camera/view/PreviewView}} and image analysis using \texttt{ImageAnalysis} \footnote{Android Image Analysis: \url{https://developer.android.com/reference/androidx/camera/core/ImageAnalysis}}. The image preview uses the user interface element provided to \texttt{CameraController} (see \ref{AbstractCameraFragmentElements}). The image analysis uses \texttt{ImageAnalyzer} (see \ref{ImageAnalyzer}) and \texttt{Detector} classes as a modular solution for object detection (see \ref{Detector}).
+
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=0.7\textwidth]{obrazky-figures/camera_controller_scheme.pdf}
+	\caption[CameraController scheme]{Scheme that show connection between AbstractCameraFragment and CameraController}
+	\label{MobileLibraryScheem}
+\end{figure}
+
+As stated previously, the controller requires services for it to function. It uses the \texttt{SettingsService} (see \ref{SettingsService}) for loading user preferences, such as what type of model to use and when or if the metrics should be displayed. These settings are aimed at developers who may utilize them for simple debugging, as well as for some edge cases where users smartphones might not perform object detection tasks fast enough, and users might want to switch to lighter, less accurate models. It is also necessary to set up both \texttt{DetectorRegistry} (see \ref{DetectorRegistry} and the \texttt{SettingsServices} (see \ref{SettingsService}, because the \texttt{CameraController} uses both of these to create instances of the \texttt{Detector} classes.
+ 
+The \texttt{CameraController} itself does not affect the analysis of the image, however, it does provide two public methods, \texttt{realtimeDetection()} and \texttt{qualityDetection()}, that wrap the \texttt{ImageAnalyzer} methods for switching between the \textit{realtime} and \textbf{precision} object detection modes. Detailed descriptions of these modes can be seen in \ref{ImageAnalyzer}.
+
+\subsection{Choosing resolution and the aspect ratio of the camera}
+
+The \texttt{ImageAnalyzer} and the \texttt{PreviewView} \footnote{Camera Preview: \url{https://developer.android.com/media/camera/camera2/camera-preview}} require the resolution at which they will operate. The resolution is determined by the resolutions required by both detectors, the higher value is preferred. If the camera cannot provide the resolution \cite{androidCameraResolution}, it will use a
+\begin{lstlisting}
+    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+\end{lstlisting}
+which will choose the closest resolution that is higher than the specified one. 
+
+Object detection models, such as YOLO, which is used in this project, usually expect a \texttt{640x640} screen resolution, which has a \texttt{1:1} aspect ratio. However, the displayed camera preview will be stretched across the whole display. Since the preview will crop the excess area to match the phone display, some data will be lost. Choosing an aspect ratio that is more similar to the display screen will minimize the loss of data and also reduce the number of detections that are outside of the displayed area. Therefore, the \texttt{16:9} aspect ratio was chosen as the default value. By comparing the statistics for mobile phone resolutions \cite{aspectRatioStats}, the most common ones are closer to \texttt{16:9} than to \texttt{4:3}.
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+\section{ImageAnalyzer}
+\label{ImageAnalyzer}
+
+The \texttt{ImageAnalyzer} connects image data from the devices camera and \texttt{Detectors} that perform object detection algorithms. It implements the \texttt{ImageAnalysis.Analyzer} interface and is one of the \texttt{CameraProvider} use cases \footnote{Android's API reference: ImageAnalysis \url{https://developer.android.com/reference/androidx/camera/core/ImageAnalysis}}. It contains logic for switching between the slower, more accurate detection and the faster, less accurate detection. This approach allows developers to use two different detectors with varying accuracy and speed. The architecture of the \texttt{ImageAnalyzer} was designed to be modular. Therefore, it accommodates the developer's needs should they choose to use both or only one of the detectors.
+
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=0.99\textwidth]{obrazky-figures/image_analyzer_detector_scheme.pdf}
+	\caption[Scheme of ImageAnalyzer, DetectionOverlay and Detector classes]{Scheme showing abstract connection between ImageAnalyzer, DetectionOverlay and Detector classes.}
+	\label{ImageAnalyzerScheme}
+\end{figure}
+
+Object detections are performed by the detectors implementing the \texttt{Detector} abstract class and always return a \texttt{DetectorResult}. These results are sent to the \texttt{DetectionOverlay} (see \ref{DetectionOverlay}) where they are used to display detected objects on top of the camera preview.
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+
+\section{Detector}
+\label{Detector}
+The abstract \texttt{Detector} class is an interface-like solution for unifying object detection algorithms. The CV.ILIBG contains predefined implementations that use OpenCV and ONNX as inference engines. Therefore, it is possible to use CV.ILIBG without writing a custom detection algorithm.
+
+However, the abstract class was designed to be modular and allows developers to reuse already implemented solutions as a base or create them from scratch. As all methods, even in non abstract classes, are \textbf{open}, meaning they can be overridden. Creating a new \texttt{Detector} from scratch can be done by implementing these methods.
+
+\bigskip
+\begin{minipage}{\textwidth}
+\begin{itemize}
+  \item {\texttt{detect(image: Bitmap) : DetectorResult} - method defining the object detection process. Input of this method is Bitmap containing the captured image. Method must return DetectorResult object.}
+  \item {\texttt{runtimeSetup(assetService: AssetService)} - method called before the detect method, should be used for setting up the runtime, loading model and other necessaries for given detection task. The \texttt{AssertService} can be used for loading models as a ByteArrays from the assets folder.}
+  \item {\texttt{destroy()} - optional cleanup for allocated memory that will be called once the \texttt{ImageAnalyzer} is destroyed .}
+\end{itemize}
+\end{minipage}
+\bigskip
+
+\subsection{Ready-to-use and abstract Detectors}
+Reusable code for object detection has been merged into abstract classes. These classes contain common methods that can be reused by other detectors, such as transposing, applying non-maximum suppression, resizing, letter-boxing images, and others. 
+
+The list of abstract and ready-to-use classes is:
+
+\bigskip
+\begin{minipage}{\textwidth}
+\begin{itemize}
+  \item {\texttt{AbstractYoloDetector} is an abstract class containing common methods and algorithms for all YOLO-based detectors.}
+  \item {YoloOnnxDetector is and detector based on \texttt{AbstractYoloDetector} and defines final \texttt{detect()} method for YOLO models from version 8 to version 11. Detector uses ONNX runtime as an inference engine.}
+  \item {Yolo26OnnxDetector is a specialized version of \texttt{YoloOnnxDetector} that changed how detections are extracted because the}
+  \item {Yolo26OnnxDetector is a specialized version of \texttt{YoloOnnxDetector} that changed how detections are extracted because the}
+  \item{YoloOpenCV is an detector that uses OpenCVs \texttt{Dnn} inference engine. It extends the \texttt{AbstractYoloDetector} and supports YOLO versions from 8 to 11.}
+\end{itemize}
+\end{minipage}
+\bigskip
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+\subsection{Detector Registry}
+\label{DetectorRegistry}
+As stated previously, the CV.ILIBG should be modular and easy to use. A single implementation of \texttt{the Detector} class can handle different models. For example, the \texttt{YoloOnnxDetector} supports any YOLO model from version 8 to 11 of any size. This also allows the use of different detectors with different models that can be changed during the runtime of the application. However, this also introduces a problem where detectors might be used with incompatible models. The \texttt{DetectorRegistry} is meant to solve this problem. By forcing developers to register the models from the project assets to the correct detector. This way, an incompatible model will not be paired with an incompatible \texttt{Detector}.
+
+\bigskip
+\begin{lstlisting}
+    DetectorRegistry.link("Model name", "model_path.model_extension")
+            { path -> DetectorDerivedClass(path) }
+\end{lstlisting}
+\bigskip
+
+The code above shows the registration of a model that will be stored with the \texttt{"Model name"}. The demonstrative application for the card game Bang! also uses these names in the user interface. After that is a path to the model with the correct extensions. Models must be stored in a \textit{models/} directory inside the assets folder. The last part is a lambda function that creates an instance of the \texttt{Detector} class, where the \texttt{DetectorDerivedClass} is the name of the class that inherits from the \texttt{Detector} abstract class. Some of the detectors have different optional parameters that can be specified in the lambda function, such as the use of Non-Maximum suppression or a threshold for detection filtering.
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+\section{DetectionOverlay}
+\label{DetectionOverlay}
+
+The \texttt{DetectionOverlay} is an abstract class used for drawing detection on top of the camera preview (see \texttt{AbstractCameraFragment} layout \ref{CameraFragmentOverlays}). This class cannot work by itself and requires developers to define how the detections will be drawn in \texttt{drawDetections()} method. The \texttt{ImageAnalyzer} updates the information needed by the \texttt{DetectionOverlay} after the active \texttt{Detector} has finished analyzing the image.
+
+\subsection{Scaling detections}
+Image data used by the object detection models might use a different resolution than the camera. This means that the image needs to be scaled to work with the model and scaled back when the detections are displayed. This can be done manually by reading from the \texttt{ImageDetails}, or by using \texttt{scaleDetectionToScreenRect()} method.
+
+\subsection{Detection, DetectorResult, and ImageDetails data classes}
+\label{DataClasses}
+As mentioned before, \texttt{ImageAnalyzer}, \texttt{Detector} and \texttt{DetectionOverlay} need to communicate with each other, as they need to pass information about detections, image size, how to scale the image, etc... All this data is structured into a data classes that are used for transfering this information.
+
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=0.70\textwidth]{obrazky-figures/data_classes.pdf}
+	\caption{Scheme showing how DetectorResult is connected to other classes.}
+	\label{DataClassesScheme}
+\end{figure}
+
+\label{DetectionClass}
+The \texttt{Detection} data class represents a single detected object. It also contains small helper methods for converting bounding boxes to other formats that use different coordinate systems, such as Kotlin's \texttt{RectF} or OpenCV's \texttt{Rect2d}. 
+
+Class parameters are represented as follows: 
+
+\bigskip
+\begin{minipage}{\textwidth}
+\begin{itemize}
+  \item {X and Y represent centered coordinates of this detections bounding box in pixels.}
+  \item {Width and Height values represent size in both (X and Y) dimensions in a pixels.}
+  \item {Detected class for this detection.}
+  \item {Confidence score of the detection.}
+\end{itemize}
+\end{minipage}
+\bigskip
+
+
+\label{ImageDetails}
+The \texttt{ImageDetails} is a small data class that stores operations that were performed on the image to extract detections. These operations are then reversed in \texttt{DetectionOverlay} when displaying detections, otherwise, the detections could be in the wrong position and stretched.
+
+\label{DetectorResult}
+The \texttt{DetectorResult} is a result of \texttt{Detector} containing the list of \texttt{Detection} objects and \texttt{ImageDetails} , as well as a list of \texttt{MetricsValue} if performance metrics logging was enabled. An instance of this object is always returned from the \texttt{Detector} analyzing the image.
+
+More details on how object detection and image manipulation, before and after the inference run, are discussed in chapter \ref{objectDetection}.
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+\section{Services}
+\label{Services}
+Services are small helper classes that are reused in CV.ILIBG and should be used in projects using CV.ILIBG. Services contain code for loading assets or saving user preferences. These functions are not hard to implement, however, adding functionality such as loading images and texts from assets might be useful for more developers. If not, they can simply ignore them.
+
+\label{AssetsService}
+\texttt{AssetsService} provides methods for loading object detection models and loading images as bitmaps for further use in the application.
+
+\label{SettingsService}
+\texttt{SettingsService} provides simple loading and saving of persistent data. The service saves general application state, such as language and font size, as well as the object detection model selection options, such as which model to use and performance logging.
+
+\label{PermissionService}
+\texttt{PermissionService} provides static methods for checking permissions to use the camera and access local storage on the device, should developers need them.
+
+\label{JsonAssetService}
+\texttt{JSONAssetService} is a template class for loading JSON files from the assets folder. This service requires a \texttt{data class} with \texttt{@Serializable} property for correctly loading JSON files as a map of \texttt{data class} objects. The loaded JSON file must contain a list of these objects. These objects will be loaded into memory as a map for faster look-up. The service can load a single file or search recursively for multiple files. Multiple files provide developers with the option of separating loaded objects into groups for easier data editing; however, the JSON objects must be of the same \texttt{data class} type. Lastly, the values are loaded on the first attempt to read from them.
+
+All services (except \texttt{PermissionService}) require an \texttt{Application} reference for loading assets and storing settings, which must be provided during the initialization of the service. The \texttt{CVILIBGApplication} initializes \texttt{SettingsService} and \texttt{AssetServices}. If the developer chooses not to use the abstract \texttt{CVILIBGApplication}, these services must be initialized manually as other parts of the library require them. The \texttt{JSONAssetService} is optional as it is not used by the rest of the library. 
+
+\begin{verbatim} 
+    val cardDetailsService = JSONAssetService(
+        app = this,
+        path = "details",
+        serializer = CardDetail.serializer(),
+        keySelector = { it.id },
+        Charsets.UTF_16BE
+        )
+\end{verbatim}
+
+Example of initializing \texttt{JSONAssetService} in a class derived from the \texttt{Application} class where \textbf{path} is a JSON file or a subdirectory in assets. \textbf{CardDetail} is a \texttt{data class}; \textbf{keySelector} is a parameter of the \texttt{data class} used as a key in the map, and lastly, the file encoding of the file.
+
+Services loaded this way can be used in \texttt{Fragment}, \texttt{Activity}, or any part of the code that has a reference to \texttt{Context}, where \texttt{MyApp} is a class derived from \texttt{Application} or \texttt{CVILIBGApplication} in which the initialization was done:
+
+\begin{verbatim}
+    private val cardDetailsService by lazy {
+        (context.applicationContext as MyApp).cardDetailsService
+    }
+\end{verbatim}

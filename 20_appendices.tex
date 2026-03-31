@@ -1,0 +1,37 @@
+\chapter{Dataset Creator installation}
+\label{datasetCreatorInstall}
+\textbf{Dataset Creator} was packaged as a Python package. Installation requires: \textbf{Python 3.10} and \textbf{pip} installed. Installation is done with the command line interface in a few steps:
+
+\subsubsection{Download the Git repository and move into it}
+\begin{lstlisting}
+git clone https://github.com/denis-fekete/cv.ilibg-dataset-creator.git
+cd cv.ilibg-dataset-creator
+\end{lstlisting}
+
+\subsubsection{Activate the virtual environment}
+\begin{lstlisting}
+Linux:
+source venv/bin/activate
+or Windows:
+.\venv\Scripts\activate
+\end{lstlisting}
+
+\subsubsection{Install dependencies}
+\begin{lstlisting}
+pip install .
+\end{lstlisting}
+or for development:
+\begin{lstlisting}
+pip install -e .
+\end{lstlisting}
+
+\subsubsection{Install \texttt{torch} and \texttt{torchvision} with GPU support}
+By default, the project will install versions of \texttt{torch} and \texttt{torchvision} that do not support GPU-accelerated training. In order to enable this feature, it is necessary to uninstall the current versions and install the appropriate versions, these might change based on the machine's hardware. For more, see \url{https://pytorch.org/get-started/locally/}.
+\begin{lstlisting}[breaklines=true]
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu129
+\end{lstlisting}
+
+\subsubsection{Open the application}
+\begin{verbatim}
+dataset-creator
+\end{verbatim}

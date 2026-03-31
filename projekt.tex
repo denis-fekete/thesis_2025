@@ -173,7 +173,7 @@
 % Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Copilot. [konkretizujte a upravte podle skutečnosti].},
   declaration={
   I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of doc. RNDr. Pavel Smrž, Ph.D.
-  I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis. I used Jetbrains IntelliJ IDEAs Machine Learning-Assisted Completition and ChatGPT when working on the software.},
+  I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis. I used Jetbrains IntelliJ IDEAs Machine Learning-Assisted Completition and ChatGPT when working on the software and Overleaf's built-in spelling checks and suggestions.},
   % I have used ChatGPT to correct spelling and other language mistakes.
   % Poděkování (nepovinné, nejlépe v jazyce práce; nechcete-li, zakomentujte pro skrytí nadpisu. / Acknowledgement (optional, ideally in the language of the thesis; comment out to hide it including a heading.) 
 %   acknowledgment={V této sekci je možno uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc
@@ -290,9 +290,14 @@
   % Text prace / Thesis text
   % ----------------------------------------------
   \ifenglish
-    \input{projekt-01-kapitoly-chapters-en}
-  \else
-    \input{projekt-01-kapitoly-chapters}
+    \input{01_02_introduction_literature}
+    \input{03_scheme_design}
+    \input{04_mobile_implementation}
+    \input{05_object_detection}
+    \input{06_dataset_creator}
+    \input{07_bang_implementation}
+    \input{08_experiments}
+    \input{09_conclusion}
   \fi
   
   % Kompilace po částech (viz výše, nutno odkomentovat a zakomentovat input výše)
@@ -383,13 +388,15 @@
   
   % Přílohy / Appendices
   \ifenglish
-    \input{projekt-30-prilohy-appendices-en}
-  \else
-    \input{projekt-30-prilohy-appendices}
+    % \input{projekt-30-prilohy-appendices-en}
+    \input{20_appendices}
+  % \else
+    % \input{projekt-30-prilohy-appendices}
   \fi
-
   
   % Kompilace po částech (viz výše, nutno odkomentovat)
   % Compilation piecewise (see above, it is necessary to uncomment it)
   %\subfile{projekt-30-prilohy-appendices}
+  
 \end{document}
+
