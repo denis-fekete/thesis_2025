@@ -1,0 +1,123 @@
+% This file should be replaced with your file with thesis content.
+%=========================================================================
+% Authors: Michal Bidlo, Bohuslav Křena, Jaroslav Dytrych, Petr Veigend and Adam Herout 2019
+
+% For compilation piecewise (see projekt.tex), it is necessary to uncomment it and change
+% \documentclass[../projekt.tex]{subfiles}
+% \begin{document}
+\chapter{Experiments}
+\section{Training models}
+\label{bangTrainingExperiments}
+This section compares models trained on different datasets and their export options to convert models into the ONNX format. The dataset table \ref{datasetTable} shows different datasets used during testing. All training was done in \textbf{Dataset Creator} with available models using synthetic data generation from the application
+
+\begin{table}[hbt]
+\label{datasetTable}
+\caption{Table of used dataset for the experiments. The \textbf{xN} represents a \textbf{N} synthetic data generated per image, \textbf{+ org} refers to unmodified, original, data was used as well.}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+Dataset       & Shortcut & Train & Validation & Synthetic data & Resized \\ \hline
+Alpha         & A        & 539   & 197        & Org        & No\\ \hline
+Beta          & B        & 2156  & 788        & x3 + Org   & No\\ \hline
+Gamma         & G        & 3773  & 1379       & x6 + Org   & No\\ \hline
+Gamma Resized & GR       & 3773  & 1379       & x6 + Org   & Yes\\ \hline
+Delta         & D        & 3773  & 1379       & x6         & Yes\\ \hline
+Alpha Simplified & AS       & 90    & 639     & Org        & No\\ \hline
+Gamma Simplified & GS       & 570   & 639     & x6         & No\\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Understanding the results}
+The next subsections will show result tables with data. To correctly understand what each column means, a quick review was prepared \cite{ultralyticsResults}:
+
+\begin{itemize}
+  \item {\textbf{t/} columns representing evaluation metrics computed on the training dataset, indicating how well the model fits the data it was trained on.}
+  \item {\textbf{v/} columns representing evaluation metrics computed on the validation dataset, meaning it provides an estimate of the model's ability to recognize unseen data.}
+  \item {\textbf{box\_loss} measures the error in predicted bounding boxes. Lower values indicate more accurate object localization.}
+  \item {\textbf{cls\_loss} measures the error in class predictions. Lower values indicate better classification performance.}
+  \item {\textbf{dfl\_loss} (Distribution Focal Loss) measures the accuracy of bounding box edge regression by modeling bounding box coordinates as probability distributions. Lower values indicate more precise localization.}
+  \item {\textbf{precision} represents the proportion of correctly predicted objects. Higher values indicate the ability to recognize correct detections.}
+  \item {\textbf{recall} represents the proportion of ground truth objects detected in the image. High recall indicates that the model successfully detects most objects.}
+  \item {\textbf{mAP50} is a mean Average Precision at IoU = 0.50. This evaluates detection performance with a less strict overlap threshold. Higher values indicate better detection accuracy.}
+  \item {\textbf{mAP50-95} is a mean Average Precision averaged over IoU thresholds from 0.50 to 0.95, which provides a stricter evaluation of detection performance.}
+\end{itemize}
+
+
+\subsection{Limited dataset with and without synthetic data}
+This test shows the difference between a dataset with no synthetic data and a dataset with \textbf{x6} synthetic data on very limited image data, mostly 2 images per class, for a total of 45 classes. Both models were trained on YOLO version 8 Nano.
+
+\begin{table}[hbt]
+\caption{Alpha reduced dataset in comparison with Gamma reduced dataset. Lower values are preferred.}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Dataset & t/box\_loss & t/cls\_loss & t/dfl\_loss & v/box\_loss & v/cls\_loss & v/dfl\_loss \\ \hline
+AS         & 0.23063 & 0.91337 & 0.86579 & 0.23749 & 2.03006 & 0.84417 \\ \hline
+GS         & 0.25085 & 0.94998 & 0.89367 & 0.23902 & 1.71815 & 0.85772 \\ \hline
+$\Delta$\% & 8.3991  & 3.9295  & 3.1692  & 0.6422  & 16.6431 & 1.5923  \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[hbt]
+\caption{Alpha reduced dataset in comparison with Gamma reduced dataset. Except time and epochs, higher values are preferred.}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Dataset    & epochs   & time  & precision(B) & recall(B) & mAP50(B) & mAP50-95(B) \\ \hline
+AS         & 136      & 17.94 & 0.54506      & 0.46305   & 0.48355  & 0.47047     \\ \hline
+GS         & 29       & 8.67  & 0.56125      & 0.52848   & 0.555    & 0.54066     \\ \hline
+$\Delta$\% & 129.6970 & 69.65 & 2.9268       & 13.1978   & 13.7596  & 13.8835     \\ \hline
+\end{tabular}
+\end{table}
+
+This experiment shows that synthetic data can help with models trained on very limited data sets. The \textbf{GS} dataset with synthetic data was trained for 70\% less time ( in this case, 9 minutes) and the mean average precision (mAP) is 13.8\% higher. This test proves that simple augmentation of data can result in less time for data processing and higher overall performance of the model.
+
+\subsection{Comparing datasets}
+The next experiment shows the difference between datasets. As datasets have different sizes, it was not possible to compare them based on the trained epochs. Therefore, a time was used to compare datasets. All datasetss were trained on YOLO version 26.
+
+\begin{table}[hbt]
+\centering
+\caption{Comparison of datasets with similar time. Higher values are preferred.}
+\label{expDatasetComparison1}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+Dataset & epoch & time & precision(B) & recall(B) & mAP50(B) & mAP50-95(B) \\ \hline
+A  & 146 & 2867.36 & 0.91806 & 0.94451 & 0.97659 & 0.97063 \\ \hline
+B  & 40  & 2850.03 & 0.93823 & 0.91781 & 0.97539 & 0.96963 \\ \hline
+D  & 37  & 2835.91 & 0.91314 & 0.92936 & 0.97559 & 0.97147 \\ \hline
+G  & 23  & 2857.56 & 0.96487 & 0.95248 & 0.98537 & 0.98476 \\ \hline
+GR & 33  & 2872.23 & 0.95742 & 0.93712 & 0.97581 & 0.97474 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[hbt]
+\centering
+\label{expDatasetComparison2}
+\caption{Comparison of datasets with similar time. Lower values are preferred.}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+Dataset & t/box\_loss & t/cls\_loss & t/dfl\_loss & v/box\_loss & v/cls\_loss & v/dfl\_loss \\ \hline
+A         & 0.19101 & 0.79243 & 0.00298 & 0.17482 & 0.23966 & 0.00473 \\ \hline
+B         & 0.15251 & 1.24147 & 0.00316 & 0.15994 & 0.25554 & 0.00442 \\ \hline
+D         & 0.1507  & 0.69188 & 0.00314 & 0.15564 & 0.25739 & 0.00315 \\ \hline
+G         & 0.21079 & 0.76429 & 0.0031  & 0.1523  & 0.16473 & 0.00395 \\ \hline
+GR        & 0.14538 & 0.54868 & 0.00302 & 0.15805 & 0.21347 & 0.00316 \\ \hline
+\end{tabular}
+\end{table}
+
+The first table \ref{expDatasetComparison1} shows that the \textbf{Gamma} and \textbf{Gamma Resized} datasets perform better than other datasets, mostly due to more variance in synthetic data. While the non resized dataset shows slightly higher precision.
+
+The second table \ref{expDatasetComparison2}, on the other hand, favors the \textbf{Gamma Resized} dataset in training \texttt{box\_loss} a \texttt{cls\_loss}. These differences are 36\% and 31\%; however, these metrics show the training data. More relevant data are validation losses and metrics from the \ref{expDatasetComparison1}, which favor the \textbf{Gamma} dataset. These results suggest that the \textbf{Gamma Resized} is performing better on training data; however, it is worse in generalization, specifically in the validation part of the dataset.
+
+The \textbf{Gamma} dataset is performing better than other datasets and is better at generalization, mostly due to the greater amount of synthetic data, which allows the model to learn the features of the objects. Because of that, this dataset was chosen for further testing and final deployment.
+
+\subsection{Comparing YOLO version}
+To Be Done - how different YOLO models compare in accuracy and speed, waiting for last model to export
+
+\subsection{Comparing export options}
+To Be Done - onnx support formatting to CPU, GPU, NPU, etc ... different export, different speeds, waiting for last model to export
+
+%=========================================================================
+
+% For compilation piecewise (see projekt.tex), it is necessary to uncomment it
+% \end{document}

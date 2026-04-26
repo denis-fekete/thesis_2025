@@ -4,16 +4,17 @@
 
 \subsubsection{Download the Git repository and move into it}
 \begin{lstlisting}
-git clone https://github.com/denis-fekete/cv.ilibg-dataset-creator.git
-cd cv.ilibg-dataset-creator
+git clone https://github.com/denis-fekete/cvlibg-dataset-creator.git
+cd cvlibg-dataset-creator
 \end{lstlisting}
 
-\subsubsection{Activate the virtual environment}
+\subsubsection{Create and activate the virtual environment}
 \begin{lstlisting}
-Linux:
-source venv/bin/activate
-or Windows:
-.\venv\Scripts\activate
+python -m venv venv
+# Linux:
+    source venv/bin/activate
+# or Windows:
+    .\venv\Scripts\activate
 \end{lstlisting}
 
 \subsubsection{Install dependencies}
@@ -26,7 +27,7 @@ pip install -e .
 \end{lstlisting}
 
 \subsubsection{Install \texttt{torch} and \texttt{torchvision} with GPU support}
-By default, the project will install versions of \texttt{torch} and \texttt{torchvision} that do not support GPU-accelerated training. In order to enable this feature, it is necessary to uninstall the current versions and install the appropriate versions, these might change based on the machine's hardware. For more, see \url{https://pytorch.org/get-started/locally/}.
+By default, non-GPU-accelerated versions of \texttt{torch} and \texttt{torchvision} are installed. To enable this feature, it is necessary to uninstall old versions and install new versions based on the machine's hardware. For more, see \url{https://pytorch.org/get-started/locally/}.
 \begin{lstlisting}[breaklines=true]
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu129
 \end{lstlisting}
@@ -34,4 +35,33 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu129
 \subsubsection{Open the application}
 \begin{verbatim}
 dataset-creator
+\end{verbatim}
+
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+
+\section{Installing mobile library with Android projects}
+\label{mobileInstall}
+\textbf{TBD}:
+
+\subsubsection{settings.gradle.kts:}
+\begin{verbatim}
+    dependencyResolutionManagement {
+		repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+		repositories {
+			mavenCentral()
+			maven { url = uri("https://jitpack.io") }
+		}
+	}
+\end{verbatim}
+
+\subsection{build.gradle.kts}
+\begin{verbatim}
+    dependencies {
+        implementation("com.github.denis-fekete:
+            computer_vision_library_for_board_games:Tag")
+    }
 \end{verbatim}
