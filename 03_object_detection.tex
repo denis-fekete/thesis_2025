@@ -1,5 +1,5 @@
 
-\chapter{Object detection process}
+\chapter{Implementing object detection}
 \label{objectDetection}
 This chapter focuses on the process of detecting objects implemented by this thesis. The most basic knowledge was gained from Redmon's \cite{Redmon_2016_CVPR} article on YOLO architecture. Further, more general knowledge on the overall process and training was gained from the YouTube series and Ultralytics' documentation and tutorials \cite{objectDetectioProcessYT_general, objectDetectioProcessYT_ultralitics}.
 
@@ -13,7 +13,7 @@ Neural networks used for object detection are usually trained on preprocessed im
 
 \begin{figure}[hbt]
 	\centering
-	\includegraphics[width=0.98\textwidth]{obrazky-figures/preprocessing.pdf}
+	\includegraphics[width=1.0\textwidth]{obrazky-figures/preprocessing.pdf}
 	\caption{Preprocessing steps shown on scan of the Bang! card from the game Bang!.}
 	\label{preprocessingFigure}
 \end{figure}
@@ -22,9 +22,9 @@ Neural networks used for object detection are usually trained on preprocessed im
 \label{letterboxing}
 Some object detection models need a fixed resolution in order to perform object detection tasks. However, the image data provided by the camera might not always be in the correct resolution, therefore, rescaling is needed \cite{letterboxingAndNormalization}.
 
-For example, the camera provides an image with\texttt{1080x1920} resolution in portrait mode. The model requires an image with a resolution of \texttt{640x640}. Rescaling the image would create a \texttt{640x640} image; however, the original aspect ratio of the image \texttt{9:16}. This would be changed to a \texttt{1:1} aspect ratio, and the distortion could affect object detection.
+For example, using a camera that provides a resolution of \texttt{1080x1920} in portrait mode, and the model, which requires an image with a resolution of \texttt{640x640}. Rescaling the image would create a \texttt{640x640} image; however, the original aspect ratio of the image was \texttt{9:16}. This would change to a \texttt{1:1} aspect ratio, and the distortion could affect object detection.
 
-Instead, if the image is resized using the larger dimension. Both dimensions will be scaled by the same scale factor, resulting in an image with a \texttt{640x360} resolution. However, this results in only one of the dimensions satisfying the resolution required by the model. \textbf{Letter-boxing} fixes this problem by padding the image with a value/color in one of the dimensions. This will result in a final image not being distorted and in the correct \texttt{640x640} resolution.
+Instead, both dimensions will be scaled by the same scale factor, using the larger dimension, resulting in an image with a \texttt{640x360} resolution. However, this results in only one of the dimensions not satisfying the resolution required by the model. \textbf{Letter-boxing} fixes this problem by padding the image with a value/color in one of the dimensions. This will result in a final image not being distorted and in the correct \texttt{640x640} resolution.
 
 
 \subsection{Normalization and representing colors in a image}
@@ -35,7 +35,7 @@ The section above explained different ways of representing the values of each pi
 
 \begin{figure}[hbt]
 	\centering
-	\includegraphics[width=0.98\textwidth]{obrazky-figures/channels.pdf}
+	\includegraphics[width=1.0\textwidth]{obrazky-figures/channels.pdf}
 	\caption[Image memory data layout of HWC and CHW]{Figure showing difference between HWC on the left, and CHW on the right. Both show 4x4 image with 3 color channels.}
 	\label{ChannelsFigure}
 \end{figure}
@@ -64,11 +64,11 @@ Inference in machine learning refers to the process of using a trained model to 
 
 \subsection{Choosing an inference runtime}
 \label{chosingInferenceRT}
-To deploy a deep learning–based object detection model on embedded or mobile devices, a dedicated inference runtime is required. Inference runtimes or engines are responsible for executing trained neural network models by loading the model parameters, processing input data, and producing task-specific outputs. In this work, the runtime executes a convolutional neural network–based object detection architecture to perform real-time object detection on image data.
+To deploy a deep learning–based object detection model on embedded or mobile devices, a dedicated inference runtime is required. Inference runtimes or engines are responsible for executing trained neural network models by loading the model parameters, processing input data, and producing task-specific outputs. In this work, the runtime executes object detection using the deployed model to perform real-time object detection on image data.
 
 OpenCV can be used as an inference runtime for CNN based neural networks with its \textit{Dnn} package. However, this approach was replaced after the first trial deployment due to insufficient performance, and further research was performed. 
 
-More popular and widely used inference runtimes are TensorFlow Lite and Open Neural Network Exchange Runtime (hereinafter referred to as ONNX and ORT for the runtime). Both projects are backed by leading companies in the computer vision space, such as Google and Microsoft, respectively. Both runtimes also support mobile devices. A study from 2023 \cite{Ren2023_ONNX_TensorFlow_BScan} shows ONNX out-performing TensorFlow on both CPU and GPU. The other blog post \cite{aimtechnoOnnxTFcomparison} from 2025 shows the gap closing as the performance difference between the runtimes is decreasing, with both having their pros and cons. The study also points out the open nature of the ONNX Runtime and its more multi-platform development approach, whereas TensorFlow Lite can benefit from Google's ecosystem. The ONNX Runtime was chosen as the main inference runtime. However, since the \textbf{CVLiBG} was designed to be expandable and modular, adding another runtime should be an easy task for developers interested in different approaches.
+More popular and widely used inference runtimes are TensorFlow Lite and Open Neural Network Exchange Runtime (hereinafter referred to as ONNX and ORT for the runtime). Both runtimes also support mobile devices. A study from 2023 \cite{Ren2023_ONNX_TensorFlow_BScan} shows ONNX out-performing TensorFlow on both CPU and GPU. The other blog post \cite{aimtechnoOnnxTFcomparison} from 2025 shows the gap closing as the performance difference between the runtimes is decreasing, with both having their pros and cons. The study also points out the open nature of the ORT and its more multi-platform development approach, whereas TensorFlow Lite can benefit from Google's ecosystem. The ONNX Runtime was chosen as the main inference runtime. However, since the CVLiBG was designed to be expandable and modular, adding another runtime should be an easy task for developers interested in different approaches.
 
 
 % ===========================================================================================
@@ -76,12 +76,12 @@ More popular and widely used inference runtimes are TensorFlow Lite and Open Neu
 % ===========================================================================================
 
 \section{Postprocessing}
-After preprocessing, the image was transformed into a suitable format usable by the neural network. The results of this inference run are further processed. This step is called \textbf{postprocessing}, and its purpose is to extract usually raw float values into more structured data, finally resulting in final sets of detections. 
+After preprocessing, the image was transformed into a suitable format usable by the neural network. The results of this inference run are further processed. This step is called \textbf{postprocessing}, and its purpose is to extract usually raw float values into more structured data, ultimately resulting in sets of detected objects. 
 
 \subsection{Data extraction}
 The first step is to extract the data from the output type of the inference engine into a more developer-friendly array style. Both \texttt{YoloOnnxDetector} and \texttt{YoloOpenCVDetector} have different types of outputs (these detectors are further discussed in \ref{Detector}). However, both of these \texttt{Detectors} outputs can be converted to a 1-dimensional array of float values.
 
-In order to extract values, it is necessary to know the layout of the data, which for YOLO neural networks converted to ONNX format is: \texttt{[batch]x[attributes]x[detections]}. Where the \textbf{batch} is always 1 because \texttt{Detectors} work with only a single image; therefore, the shape is effectively \texttt{[attributes]x[detections]}. The \textbf{attributes} are individual values from the detection, meaning: x, y, width, height, and confidence score of each class. \textbf{Detections} refer to the number of detections found by the model. For the YOLOv8 models, this value represents grid like feature maps: 80x80 + 40x40 + 20x20 = 8400 \footnote{How YOLOv8 Works: \url{https://nvidia-isaac-ros.github.io/concepts/object_detection/yolov8/index.html\#how-yolov8-works}}.
+In order to extract values, it is necessary to know the layout of the data, which for YOLO neural networks converted to ONNX format is: \texttt{[batch]x[attributes]x[detections]}. Where the \textbf{batch} is always 1 because \texttt{Detectors} work only with a single image; therefore, the shape is effectively \texttt{[attributes]x[detections]}. The \textbf{attributes} are individual values from the detection, meaning: x, y, width, height, and confidence score of each class. \textbf{Detections} refer to the number of detections found by the model. For the YOLOv8 models, this value represents grid like feature maps: 80x80 + 40x40 + 20x20 = 8400 \footnote{How YOLOv8 Works: \url{https://nvidia-isaac-ros.github.io/concepts/object_detection/yolov8/index.html\#how-yolov8-works}}.
 
 \begin{figure}[hbt]
 	\centering
@@ -94,7 +94,7 @@ However, the \texttt{[attributes]x[detections]} shape might not be the most intu
 
 \begin{verbatim}
 // data : array containing data in [attributes]x[detections] format 
-for(column in 0 until numberOfDetections) {
+for (column in 0 until numberOfDetections) {
     val x = data[0 * numberOfDetection + column]
     val y = data[1 * numberOfDetection + column]
     // ...
@@ -103,7 +103,7 @@ for(column in 0 until numberOfDetections) {
 
 \begin{verbatim}
 // data : array containing data in [detections]x[attributes] format 
-for(attributes in data) {
+for (attributes in data) {
     val x = attributes[0]
     val y = attributes[1]
     // ...
@@ -112,7 +112,8 @@ for(attributes in data) {
 
 The abstract code snippet above shows the difference between the two approaches. A very simple test for both of these methods shows that transposing the data is 3 times slower, which is approximately \texttt{5.18 milliseconds}. Therefore, a direct approach mirroring the memory layout was chosen as the final solution for both included \texttt{Detectors}.
 
-Lastly, it is necessary to determine the best class with the highest confidence score. This is done by retrieving all confidence scores and simply remembering the highest value and the index.
+\subsection{Thresholding}
+The result of the extraction step is a list of \texttt{Detection} (see \ref{DetectionClass}) objects. Each object contains x and y coordinates, height and width dimensions, and its best class and confidence score. However, before creating an object, all confidence scores for the given detection are compared, and the highest value and its class are stored. If the best confidence score value is above the \textbf{threshold}, an object will be created; otherwise, this detection will be filtered out.
 
 \begin{verbatim}
 var bestClass : Int = -1
@@ -127,39 +128,36 @@ for (row in 4 until numOfAttributes) {
 }
 \end{verbatim}
 
-\subsection{Thresholding}
-The result of the extraction step is a list of \texttt{Detection} (see \ref{DetectionClass}) objects. Each object contains x and y coordinates, height and width dimensions, and its best class and confidence score. However, before creating an object, all confidence scores for the given detection are compared, and the highest value and its class are stored. If the best confidence score value is above the \textbf{threshold}, an object will be created; otherwise, this detection will be filtered out.
+Lastly, it is necessary to determine the best class with the highest confidence score. This is done by retrieving all confidence scores and simply remembering the highest value and the index.
 
-\subsubsection{Non-Maximum Suppression}
+
+\subsection{Non-Maximum Suppression}
 The object detection model might output multiple bounding boxes for one object. These duplications need to be removed, and the most proven method is \textbf{Non-Maximum Suppression} \cite{nms}. If the computed \textbf{Intersection Over Union} or \textbf{IoU} for two detections is past a threshold, the detection with the lower confidence score is removed. The NMS algorithm can be simplified into 3 steps \cite{nms}:
 
 \begin{enumerate}
   \item {Choose the detection with the highest confidence score from all detections, remove it from the list of all detections, and add it to the list of kept ones.}
   
-  \item {Compute IoU for the chosen detection and the rest of the detections. If the IoU for the detection from the list of all detections is above the threshold, remove it from the list of all detections.}
+  \item {Compute IoU for the chosen detection, from the 1st step, and the rest of the detections. If the IoU is above the threshold, remove it from the list of all detections.}
   
   \item {Repeat until the list of all detections is empty.}
 \end{enumerate}
 
 \begin{verbatim}
-detections.sortByDescending { it.score }
+allDetections.sortByDescending { it.score }
 keptDetections = mutableListOf<Detection>()
-while (detections.isNotEmpty()) {
-    val best = detections.first()
+while (allDetections.isNotEmpty()) {
+    val best = allDetections.first()
     keptDetections.add(best)
-    detections.remove(best)
+    allDetections.remove(best)
 
-    // check all other detections, remove ones with IoU > threshhold
-    for (detection in detections) {
-        val iou = computeIoU(best, detection)
-
-        if (iou > threshold)
-            detections.remove(detection)
+    for (detection in allDetections) {
+        if (computeIoU(best, detection) > threshold)
+            allDetections.remove(detection)
     }
 }
 \end{verbatim}
 
-The code above shows the implementation of NMS. The list of detections is sorted by score at the start instead of looking for the best score in each step. It should be noted that this code does not work and is not used, as deleting an item from the list while iterating through it will result in an error. Instead, a method with boolean masks is applied. This method masks detections instead of removing them; these can be skipped without the need for deleting objects from the list. However, this version was chosen for illustration purposes as it is more straightforward .
+The code above shows the implementation of NMS. The list of detections is sorted by confidence score at the start instead of looking for the best score in each step. It should be noted that this code does not work and is not used, as deleting an item from the list while iterating through it will result in an error. Instead, a method with boolean masks is applied. This method masks detections instead of removing them; these can be skipped without the need for deleting objects from the list. However, this version was chosen for illustration purposes as it is more straightforward .
 
 \begin{figure}[hbt]
 	\centering
@@ -170,9 +168,9 @@ The code above shows the implementation of NMS. The list of detections is sorted
 
 This, however, can result in objects of different classes removing one another. For example, an apple held by a person is being deleted because it overlaps with a human who has a higher confidence score. To help solve this problem, NMS is applied only to the same classes; therefore, only the human class can remove another human class.
 
-\textbf{CVLiBG} also contains another implementation of NMS using OpenCV's built in NMS filtering method. However, this method requires converting the \texttt{Detection} objects into OpenCV's \texttt{Rect2D} objects. This method is \texttt{1.5} to \texttt{2} times slower, with a time difference of 63 nanoseconds, compared to the method written in Kotlin using \texttt{Detection} objects.
+CVLiBG also contains another implementation of NMS using OpenCV's built in NMS filtering method. However, this method requires converting the \texttt{Detection} objects into OpenCV's \texttt{Rect2D} objects. This method is \texttt{1.5} to \texttt{2} times slower, with a time difference of 63 nanoseconds, compared to the method written in Kotlin using \texttt{Detection} objects.
 
-NMS is not a cheap operation, as it has to iterate through all detected objects multiple times. Therefore, it is recommended to first reduce the number of detections using thresholding or other methods \cite{nms}. Lastly, NMS can use confidence softening instead of removing detections. However, this approach is usually not used for real-time detection tasks. 
+NMS is not a cheap operation, especially with many objects in one scene, as it has to iterate through all detected objects multiple times. Therefore, it is recommended to first reduce the number of detections using thresholding or other methods \cite{nms}. Lastly, NMS can use confidence softening instead of removing detections. However, this approach was implemented for real-time detection tasks as it would require multiple repetitions. 
 
 \bigskip
 \textit{Note: all of the above mentioned data showing performance comparisons between different methods were collected using the YOLOv8 model and on an available device whose hardware capabilities are mentioned in \ref{bangTrainingExperiments}.}

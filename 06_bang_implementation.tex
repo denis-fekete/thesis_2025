@@ -17,106 +17,114 @@ The core principle of the game is simple: attack other players, defend and heal 
 
 % ===========================================================================================
 
-\section{Creating a model for Bang! card game}
-This section will demonstrate the use of the dataset tool for creating a model used by the Bang! demonstrative application.
+\section{Creating object detection model for Bang! card game}
+To test the capabilities and usability of the proposed Dataset Creator, this tool was used to create an annotated dataset and train object detection models for the Bang! card game.
 
 \subsection{Data gathering and annotating}
-First, it is necessary to gather image data with the game cards. These can be found online or taken with a smartphone's camera. Manually annotating a few dozen images might not take too much time; however, once developers start going into the hundreds, this task might start to become overwhelming. 
+In order to create an object detection model, it is necessary to gather image data with the game cards. These can be found online or taken with a smartphone's camera. Manually annotating a few dozen images might not take too much time; however, once developers start annotating hundreds of images, the task becomes more burdensome. 
 
-To help developers with this problem, the \textbf{Dataset Creator} provides an automatic annotation functionality. This, however, requires a working object detection model capable of recognizing and detecting game objects. The recommended approach is to annotate a few examples of each game object, use synthetic data generation, and utilize this data to train the first model. This model can later be used for annotation, and while the detections might not always be precise, it should speed up the further annotation of image data.
+To help developers with this problem, the Dataset Creator provides an automatic annotation functionality. This, however, requires a working object detection model capable of recognizing and detecting game objects. The recommended approach is to annotate a few examples of each game object, use synthetic data generation, and utilize this data to train the first model. This model can later be used for annotation, and while the detections might not always be precise, it should speed up the further annotation of image data. 
 
 However, it should be noted that iterating and creating newer models after annotating only a few image data might not be worth the time spent on training. Developers should find a balance based on the amount of time it takes for their machine to train one model.
 
 \subsection{Training the models}
-Before training, it is required to export the dataset. Choosing the correct settings for training is mostly a matter of trial and error, especially since the batch size and number of workers will be limited by the hardware of the computer on which the dataset tool is run. Exported datasets are in Ultralytics YOLO model format. These saved datasets can be used for training outside of the \textbf{Dataset Creator} , even by other training solutions; however, conversion might be required. The \textbf{Dataset Creator} is primarily meant for hobbyists and small developers who use their machines for training as well.
+Before training, it is required to export the dataset. Choosing the correct settings for training is mostly a matter of trial and error, especially since the batch size and number of workers will be limited by the hardware's capabilities of the computer used for the training. Exported datasets are in Ultralytics YOLO model format. These saved datasets can be used for training outside of the Dataset Creator , even by other training solutions; however, conversion might be required. The \textbf{Dataset Creator} is primarily meant for hobbyists and small developers who use their machines for training as well.
 
 % ===========================================================================================
 
 % ===========================================================================================
 
-\section{Mobile Application and setting up services}
-After creating a new project in the integrated development environment of the developer's choice, start by adding CVLiBG to the dependencies of the project:
+\section{Implementing mobile application}
+After creating a new project in the integrated development environment of the developer's choice, the library needs to be added to the project's dependencies (see \ref{mobileInstall}).
 
-The starting point of the application will be the \texttt{Application} class, and it is required to subclass the abstract \texttt{CVILIBGApplication} and implement its \texttt{registerModels()} method (see \ref{applicationClass} and \ref{DetectorResult}. The Bang! application does not use any advanced functionalities and therefore just implements this class. However, should something stop developers from using \texttt{CVILIBGApplication} as the base of their \texttt{Application} class, it is required to implement its functionalities; otherwise, the \texttt{CameraController} and other parts of the library will not work.
+The starting point of the application is \texttt{MyApp}, which is derived from the \texttt{Application} class. This is where \texttt{DetectorRegistry} entries are defined to prevent mismatched model and \texttt{Detector} versions (see \ref{DetectorRegistry}), as these will be changeable in the settings menu.
 
-\subsection{Data classes for navigation and card details}
-Inside the application class that inherits from \texttt{CVILIBGApplication}, create a public variable named \texttt{CardDetailsService} and \textbf{Class2LinkService} using the template \texttt{JsonAssetService}. Both of these services require data classes defining the structure of the JSON object that will be loaded: \texttt{CardDetails} and \texttt{Class2Link}, respectively. For more information on how these services work, see \ref{JsonAssetService}.
+The next part is an Android's \texttt{Activity} hosting all the functionalities of the application. Instead of using multiple activities, this application uses only one activity and changes fragments. As this activity will contain use cases and functionality that require the camera, it is necessary to request permission to use it; this can be achieved with \texttt{CommonUtils.checkCameraPermission()} method.
 
-The \texttt{Class2Link} is used to convert \textbf{integer class indexes}, which are the output of \texttt{Detector}, into \textbf{string based link} identifiers that are used for navigation when displaying details for each card or symbol.
+Furthermore, it is necessary to change the \texttt{AndroidManifest.xml} file and add the permission request to use the camera (see \ref{androidManifestExample} for an example of the \texttt{AndroidManifest.xml}).
 
-The \texttt{CardDetails} is used to define the content of the page that is displayed to the user after clicking on the detection. This data class contains a path to the image, a name, a description, and the ID of the object. The ID is a string and must be correctly linked to the class index inside the \texttt{Class2Link}.
-
-\section{Main activity}
-Android projects need an activity as a starting point. The main activity of this project will also be the only activity. This application will use fragments instead of activities. Therefore, the navigation logic can be defined only inside the main activity and shared across all fragments. This activity will contain a camera preview and therefore requires a permission request to use it; this can be achieved with \texttt{PermissionService}.
-
-Lastly, it is necessary to change the \texttt{AndroidManifest.xml} file and add the activity and application files used by the project (see \ref{androidManifestExample} for an example of the \texttt{AndroidManifest.xml}).
-
+Navigation is achieved using \texttt{NavHostFragment} \footnote{Android API -- Navigation host fragment:\url{https://developer.android.com/reference/androidx/navigation/fragment/NavHostFragment}} and \texttt{NavigationGraph}. This approach changes the fragments displayed as content while staying inside the same activity. Furthermore, to simplify loading details for each card, a link system was set up.
 % ===========================================================================================
 
 % ===========================================================================================
 
 
 \section{Fragments}
-Fragments are used as small parts of the UI that can be swapped inside the activity. This approach allows to reuse navigation buttons and logic from the main activity inside the individual fragments.
+Fragments are parts of the UI. By design, these can be swapped without changing the activity, allowing for the reuse of the navigation functionality and logic from the main activity. 
 
-\subsection{CameraFragment}
-\begin{verbatim}
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        
-        detectionOverlay.onDetectionClicked = { detection ->
-            val bundle = bundleOf("id" to class2linkService
-                .items[detection.classIndex]!!.linkId)
-                
-            findNavController().navigate(R.id.cardDetailsFragment, bundle)
-} }
+All fragments in this application are derived from \texttt{BaseFragment} (not part of the CVLiBG). This simple class is derived from \texttt{Fragment} and implements automatically generated view binding for each layout, resulting in less error prone and cleaner code \footnote{Android API -- View binding: \url{https://developer.android.com/topic/libraries/data-binding/generated-binding}}.
+
+% ===========================================================================================
+
+\subsection{Life-cycle scope of fragments}
+This application mostly uses \texttt{Fragments}. These have separated fragment lifecycle and view lifecycle. Meaning that while the fragment is kept in memory, its view might be destroyed; such situation occurs when minimizing the application \cite{fragmentLifecycle}. 
+
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=0.5\textwidth]{obrazky-figures/fragment-view-lifecycle.png}
+	\caption{Android's activity lifecycle concepts. Image source: \cite{activityLifecycle}.}
+	\label{preprocessingFigure}
+\end{figure}
+
+To prevent heavy computations, such as having the camera active and calculating detections in the background while the application is in use, it is necessary to respond to these changes. However, aggressive optimizations might result in repetitive calls to heavy operations, such as loading models from the assets directory.
+
+% ===========================================================================================
+
+
+\subsection{Camera Fragment}
+The \texttt{CameraFragment} is responsible for creating \texttt{CameraController}, providing \texttt{Detectors} to \texttt{ImageAnalyzer}, and connecting its outputs to the UI elements.
+This fragment is responsible for setting up the \texttt{CameraController}, initializing detectors, and adding on-click behavior for user interaction with detected objects. The abstract \texttt{DetectionOverlay's} \texttt{onDetectionClicked} is a callback function invoked on user interaction with detected objects. The lambda function uses the \texttt{Class2LinkService} to convert the integer class value into a string link Id used by the navigation controller to open the details card.
+
+\begin{verbatim}      
+    detectionOverlay.onDetectionClicked = { detection ->
+        val bundle = bundleOf("id" to class2linkService
+            .items[detection.classIndex]!!.linkId)
+        findNavController().navigate(R.id.cardDetailsFragment, bundle)
+    } 
 \end{verbatim}
 
-The code above is responsible for the on-click behavior of the detected objects drawn onto the screen. The \texttt{DetectionOverlay's} \texttt{onDetectionClicked} is a callback function that is executed on user interaction with detected objects (for more information, see \ref{DetectionOverlay} or \ref{BangDetectionOverlay}). The lambda function uses the \texttt{Class2LinkService} to convert the integer class value into a string link Id that is used by the navigation controller to open the details card.
+The \texttt{BangDetectionOverlay} provides a reference to the clicked detection object. This application implements a link system, which allows loading details of each card from a JSON file. These files are a list of JSON objects containing values such as title, image, description, and links to other cards. However, defining these links by the class ID would be tiresome and hard to read for most developers. 
 
-Further, it is required to provide \texttt{Detector} classes for the \texttt{CameraController}, which is done by implementing the abstract \texttt{setupDetectors()} method. For this application, detectors are set up with \texttt{SettingsService} and allow users to change detectors and models in settings. The rest of the camera setup is handled by \texttt{AbstractCameraFragment}, from which this class is derived.
+Because of that, a \texttt{Class2LinkService}, is used to convert \textbf{integer} class values, which are the output retrieved from the \texttt{BangDetectionOverlay}, into \textbf{string-based} link identifiers used for navigation when displaying details for each card or symbol. The service is based on the template \texttt{AssetService} and uses the \texttt{Class2Link} data class.
+
+Further, it is required to provide \texttt{Detector} classes for the \texttt{CameraController}. This application uses the \texttt{SettingsService} for storing the currently used detectors, which allows users to change detectors and models in settings.
 
 \begin{verbatim}
-override fun setupDetectors() {
-    realtimeDetector = DetectorRegistry.createDetector(
-        settingsService.realtimeModel)
-    realtimeDetector?.setMetricsEnabled(settingsService.showMetrics)
-    realtimeDetector?.setVerboseMetricsEnabled(
-        settingsService.verboseMetrics) }
+    private fun setupDetectors() {
+        realtimeDetector = DetectorRegistry.createDetector(
+            settingsService.data.realtimeModel)
+        qualityDetector = DetectorRegistry.createDetector(
+            settingsService.data.precisionModel)
+    }
 \end{verbatim}
+
+\label{BangDetectionOverlay}
+This fragment also contains the \texttt{PreviewView}, \texttt{MetricsOverlay} and \texttt{DetectionOverlay} derived class, \texttt{BangDetectionOverlay}. The layout follows the recommended approach with \texttt{PreviewView}, \texttt{BangDetectionOverlay}, and \texttt{MetricsOverlay} stacked on top of each other (see \ref{CameraFragmentOverlays}).
+
+The \texttt{BangDetectionOverlay} defines a \texttt{drawDetections()} method, which contains code for drawing detections onto the screen. It iterates through all detection objects and uses \texttt{the scaleDetectionToScreenRect()} method from the \texttt{DetectionOverlay} to scale detections, as the camera resolution may not match the screen's resolution. 
+
+% ===========================================================================================
+
+% ===========================================================================================
+
+
 
 
 \subsection{DetailsFragment}
 \label{DetailsFragment}
-Details fragment loads values from the \texttt{CardDetailsService} based on the provided \texttt{linkID} string that is represented by the \texttt{id} inside the JSON object. Details for each card are loaded and displayed onto the \texttt{DetailsFragment}. This link system also allows defining other IDs in the \texttt{links} as clickable objects that move the user to another details card. While this is not directly implemented into the \textbf{CVLiBG}, it can be copied from this demonstration application. 
+Details fragment loads values from the loaded JSON files and displays its contents. This is achieved with \texttt{CardDetailsService}, which uses the template \texttt{AssetService} and the \texttt{CardDetail} data class. Each object contains an \texttt{id} element, which is used as a key for the service. This link system also allows defining other IDs in the list of string ids, the \texttt{links} field. These links are translated as clickable objects, moving the user to another details card. 
 
 \begin{figure}[hbt]
 	\centering
-	\includegraphics[width=0.98\textwidth]{obrazky-figures/DetailsFragment_scheme.pdf}
+	\includegraphics[width=1.0\textwidth]{obrazky-figures/DetailsFragment_scheme.pdf}
 	\caption[Screenshot of fragment with card details]{Screenshot from the \texttt{DetailsFragment} with loaded Bang! card.}
 	\label{DetailsFragmentScheme}
 \end{figure}
 
 \subsection{SettingsFragment}
-The last fragment consists of UI elements for interacting with the \texttt{SettingsService} values, such as the application's language and the values used for selecting the object detection models.
+The last fragment consists of UI elements for interacting with the \texttt{settingsService}. This class uses the template \texttt{ConfigService} with its data class \texttt{UserPreferences}. This service is used to store and load values, such as the application's language, selected detector, font size, etc.
+
 
 % ===========================================================================================
 
 % ===========================================================================================
-
-\section{BangDetectionOverlay}
-\label{BangDetectionOverlay}
-The \texttt{BangDetectionOverlay} is a class derived from the \texttt{DetectionOverlay} class. It defines a \texttt{drawDetections()} method that contains code for drawing detections onto the screen. It iterates through all detection objects and uses \texttt{DetectionOverlay's} \texttt{scaleDetectionToScreenRect()} method to scale the detections properly and draw a rectangle with its name in the top left corner outside of the rectangle. 
-
-% ===========================================================================================
-
-% ===========================================================================================
-
-\section{Final application}
-The result application is capable of detecting objects and correctly labeling them. The camera preview is working at real-time frame-rates, and object detection can run at all times, with models trying to analyze the image as fast as possible or in a \textit{"precision"} mode that fixes the image and runs a more precise and demanding model. Models can be configured in the application's settings.
-
-Detections are clickable and bring the users to a detailed page containing information about the card. This information is defined inside a \texttt{.json} file that is loaded from the project's assets. Details also support cross-linking between different pages that can either describe the card or a simple text based article that might explain certain edge cases for the games rules.
-
-The application also contains simple accessibility settings for changing the font or language. The settings also contain a few options for developers who might want to change models on the fly without recompiling the project.
-
-The whole Bang! application is written with fewer than 500 lines (excluding imports, comments, and \texttt{.xml} layouts). Most of which is UI related code.

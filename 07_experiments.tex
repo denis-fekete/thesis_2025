@@ -5,10 +5,34 @@
 % For compilation piecewise (see projekt.tex), it is necessary to uncomment it and change
 % \documentclass[../projekt.tex]{subfiles}
 % \begin{document}
-\chapter{Experiments}
-\section{Training models}
+\chapter{Experiments and evaluation}
+This chapter shows experiments performed on gathered image data to train the object detection model for the Bang! card. Furthermore, it evaluates the proposed Dataset Creator and CVLiBG.
+
+%=========================================================================
+
+%=========================================================================
+
+\section{Experiment -- training models for the Bang! card game}
 \label{bangTrainingExperiments}
-This section compares models trained on different datasets and their export options to convert models into the ONNX format. The dataset table \ref{datasetTable} shows different datasets used during testing. All training was done in \textbf{Dataset Creator} with available models using synthetic data generation from the application
+This section compares models trained on different datasets and their export options to convert models into the ONNX format. The dataset table \ref{datasetTable} shows different datasets used during testing. All training was done in Dataset Creator with available models from Ultralytics, with the patience value set to 50, meaning that if the model did not improve after 50 epochs, the training would be suspended. The synthetic data used in the experiments were generated using the Dataset Creator. All experiments were performed on consumer-grade hardware. The hardware configurations can be seen in table \ref{hardwareConfiguration}.
+
+\begin{table}[hbt]
+\caption{Used hardware for experiments.}
+\centering
+\label{hardwareConfiguration}
+\begin{tabular}{|cc|}
+\hline
+\multicolumn{2}{|c|}{Model training}                         \\ \hline
+\multicolumn{1}{|c|}{CPU}        & AMD Ryzen 4600H               \\ \hline
+\multicolumn{1}{|c|}{GPU}        & NVIDIA RTX 2060 Mobile        \\ \hline
+\multicolumn{1}{|c|}{GPU Memory} & 6GB                           \\ \hline
+\multicolumn{1}{|c|}{Memory}     & 16GB                          \\ \hline
+\multicolumn{2}{|c|}{Mobile benchmarks}                          \\ \hline
+\multicolumn{1}{|c|}{CPU}        & Mediatek Dimensity 7300 Ultra \\ \hline
+\multicolumn{1}{|c|}{GPU}        & Mali-G615 MC2                 \\ \hline
+\multicolumn{1}{|c|}{Memory}     & 12GB                          \\ \hline
+\end{tabular}
+\end{table}
 
 \begin{table}[hbt]
 \label{datasetTable}
@@ -27,27 +51,91 @@ Gamma Simplified & GS       & 570   & 639     & x6         & No\\ \hline
 \end{tabular}
 \end{table}
 
+
 \subsection{Understanding the results}
 The next subsections will show result tables with data. To correctly understand what each column means, a quick review was prepared \cite{ultralyticsResults}:
 
 \begin{itemize}
-  \item {\textbf{t/} columns representing evaluation metrics computed on the training dataset, indicating how well the model fits the data it was trained on.}
-  \item {\textbf{v/} columns representing evaluation metrics computed on the validation dataset, meaning it provides an estimate of the model's ability to recognize unseen data.}
-  \item {\textbf{box\_loss} measures the error in predicted bounding boxes. Lower values indicate more accurate object localization.}
-  \item {\textbf{cls\_loss} measures the error in class predictions. Lower values indicate better classification performance.}
-  \item {\textbf{dfl\_loss} (Distribution Focal Loss) measures the accuracy of bounding box edge regression by modeling bounding box coordinates as probability distributions. Lower values indicate more precise localization.}
-  \item {\textbf{precision} represents the proportion of correctly predicted objects. Higher values indicate the ability to recognize correct detections.}
-  \item {\textbf{recall} represents the proportion of ground truth objects detected in the image. High recall indicates that the model successfully detects most objects.}
-  \item {\textbf{mAP50} is a mean Average Precision at IoU = 0.50. This evaluates detection performance with a less strict overlap threshold. Higher values indicate better detection accuracy.}
-  \item {\textbf{mAP50-95} is a mean Average Precision averaged over IoU thresholds from 0.50 to 0.95, which provides a stricter evaluation of detection performance.}
+    \item {\textbf{time} cumulative training time elapsed up to the given epoch. This value is represented in seconds.}
+    \item {\textbf{epoch} is one complete pass of the model over the entire training dataset. Each epoch ends with an evaluation on the validation part of the dataset.}
+    \item {\textbf{t/} columns representing evaluation metrics computed on the training dataset, indicating how well the model fits the data it was trained on.}
+    \item {\textbf{v/} columns representing evaluation metrics computed on the validation dataset, meaning it provides an estimate of the model's ability to recognize unseen data.}
+    \item {\textbf{box\_loss} measures the error in predicted bounding boxes. Lower values indicate more accurate object localization.}
+    \item {\textbf{cls\_loss} measures the error in class predictions. Lower values indicate better classification performance.}
+    \item {\textbf{dfl\_loss} (Distribution Focal Loss) measures the accuracy of bounding box edge regression by modeling bounding box coordinates as probability distributions. Lower values indicate more precise localization.}
+    \item {\textbf{precision} represents the proportion of correctly predicted objects. Higher values indicate the ability to recognize correct detections.}
+    \item {\textbf{recall} represents the proportion of ground truth objects detected in the image. High recall indicates that the model successfully detects most objects.}
+    \item {\textbf{mAP50} is a mean Average Precision at IoU = 0.50. This evaluates detection performance with a less strict overlap threshold. Higher values indicate better detection accuracy.}
+    \item {\textbf{mAP50-95} is a mean Average Precision averaged over IoU thresholds from 0.50 to 0.95, which provides a stricter evaluation of detection performance.}
 \end{itemize}
 
+\subsection{Comparing Open Neural Network Exchange with OpenCV detectors}
+CVLiBG internally uses OpenCV for image manipulation. However, it also implements an additional module with ONNX based detectors. ONNX was chosen as an OpenCV alternative due faster inference latency. This experiment show measured differences between the two inference runtimes.
+
+\begin{table}[hbt]
+\caption{Table showing difference between Open Neural Network Runtime in comparison with OpenCV's DNN runtime.}
+\centering
+\begin{tabular}{|ccccccc|}
+\hline
+\multicolumn{1}{|c|}{} &
+  \multicolumn{1}{c|}{Total} &
+  \multicolumn{1}{c|}{Preproc} &
+  \multicolumn{1}{c|}{Conversion} &
+  \multicolumn{1}{c|}{Inference} &
+  \multicolumn{1}{c|}{Thresholding} &
+  NMS \\ \hline
+\multicolumn{7}{|c|}{ONNX} \\ \hline
+\multicolumn{1}{|c|}{average} &
+  \multicolumn{1}{c|}{134.3490} &
+  \multicolumn{1}{c|}{0.5555} &
+  \multicolumn{1}{c|}{10.9532} &
+  \multicolumn{1}{c|}{119.9382} &
+  \multicolumn{1}{c|}{2.6333} &
+  0.0124 \\ \hline
+\multicolumn{1}{|c|}{median} &
+  \multicolumn{1}{c|}{129.3519} &
+  \multicolumn{1}{c|}{0.5311} &
+  \multicolumn{1}{c|}{10.5143} &
+  \multicolumn{1}{c|}{115.0735} &
+  \multicolumn{1}{c|}{2.5279} &
+  0.0111 \\ \hline
+\multicolumn{7}{|c|}{OpenCV} \\ \hline
+\multicolumn{1}{|c|}{average} &
+  \multicolumn{1}{c|}{245.5628} &
+  \multicolumn{1}{c|}{0.5349} &
+  \multicolumn{1}{c|}{3.6952} &
+  \multicolumn{1}{c|}{236.2461} &
+  \multicolumn{1}{c|}{3.4799} &
+  0.4261 \\ \hline
+\multicolumn{1}{|c|}{median} &
+  \multicolumn{1}{c|}{238.1550} &
+  \multicolumn{1}{c|}{0.5226} &
+  \multicolumn{1}{c|}{3.1983} &
+  \multicolumn{1}{c|}{228.9654} &
+  \multicolumn{1}{c|}{3.1094} &
+  0.3894 \\ \hline
+\end{tabular}
+\end{table}
+
+OpenCV's implementation benefits from its image \textbf{conversion} being, on average, 7 milliseconds faster. However, the \textbf{inference} latency shows a difference of almost 113 milliseconds, being almost 2x slower.
 
 \subsection{Limited dataset with and without synthetic data}
 This test shows the difference between a dataset with no synthetic data and a dataset with \textbf{x6} synthetic data on very limited image data, mostly 2 images per class, for a total of 45 classes. Both models were trained on YOLO version 8 Nano.
 
 \begin{table}[hbt]
-\caption{Alpha reduced dataset in comparison with Gamma reduced dataset. Lower values are preferred.}
+\caption{Alpha simplified dataset in comparison with Gamma simplified dataset. Except time and epochs, higher values are preferred.}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Dataset    & epochs   & time  & precision & recall & mAP50 & mAP50-95 \\ \hline
+AS         & 136      & 17.94 & 0.54506      & 0.46305   & 0.48355  & 0.47047     \\ \hline
+GS         & 29       & 8.67  & 0.56125      & 0.52848   & 0.555    & 0.54066     \\ \hline
+$\Delta$\% & 129.6970 & 69.65 & 2.9268       & 13.1978   & 13.7596  & 13.8835     \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[hbt]
+\caption{Alpha Simplified in comparison with Gamma Simplified. Lower values are preferred.}
 \centering
 \begin{tabular}{|c|c|c|c|c|c|c|}
 \hline
@@ -58,22 +146,12 @@ $\Delta$\% & 8.3991  & 3.9295  & 3.1692  & 0.6422  & 16.6431 & 1.5923  \\ \hline
 \end{tabular}
 \end{table}
 
-\begin{table}[hbt]
-\caption{Alpha reduced dataset in comparison with Gamma reduced dataset. Except time and epochs, higher values are preferred.}
-\centering
-\begin{tabular}{|c|c|c|c|c|c|c|}
-\hline
-Dataset    & epochs   & time  & precision(B) & recall(B) & mAP50(B) & mAP50-95(B) \\ \hline
-AS         & 136      & 17.94 & 0.54506      & 0.46305   & 0.48355  & 0.47047     \\ \hline
-GS         & 29       & 8.67  & 0.56125      & 0.52848   & 0.555    & 0.54066     \\ \hline
-$\Delta$\% & 129.6970 & 69.65 & 2.9268       & 13.1978   & 13.7596  & 13.8835     \\ \hline
-\end{tabular}
-\end{table}
 
-This experiment shows that synthetic data can help with models trained on very limited data sets. The \textbf{GS} dataset with synthetic data was trained for 70\% less time ( in this case, 9 minutes) and the mean average precision (mAP) is 13.8\% higher. This test proves that simple augmentation of data can result in less time for data processing and higher overall performance of the model.
+
+Models were set to train for 1000 epochs; however, as the models did not improve, the training was suspended automatically, and the best results were used for evaluation. The \textbf{GS} dataset with synthetic data was trained for 70\% less time (in this case, 9 minutes), while the mean average precision (mAP) is 13.8\% higher. This experiment shows that synthetic data can help with models trained on very limited datasets while achieving higher accuracy and lower training time.
 
 \subsection{Comparing datasets}
-The next experiment shows the difference between datasets. As datasets have different sizes, it was not possible to compare them based on the trained epochs. Therefore, a time was used to compare datasets. All datasetss were trained on YOLO version 26.
+The next experiment shows the difference between datasets. As datasets have different sizes, it was not possible to compare them based on the trained epochs. Therefore, a time was used to compare datasets. All datasets were trained on YOLO version 26.
 
 \begin{table}[hbt]
 \centering
@@ -81,7 +159,7 @@ The next experiment shows the difference between datasets. As datasets have diff
 \label{expDatasetComparison1}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
-Dataset & epoch & time & precision(B) & recall(B) & mAP50(B) & mAP50-95(B) \\ \hline
+Dataset & epoch & time & precision & recall & mAP50 & mAP50-95 \\ \hline
 A  & 146 & 2867.36 & 0.91806 & 0.94451 & 0.97659 & 0.97063 \\ \hline
 B  & 40  & 2850.03 & 0.93823 & 0.91781 & 0.97539 & 0.96963 \\ \hline
 D  & 37  & 2835.91 & 0.91314 & 0.92936 & 0.97559 & 0.97147 \\ \hline
@@ -109,13 +187,73 @@ The first table \ref{expDatasetComparison1} shows that the \textbf{Gamma} and \t
 
 The second table \ref{expDatasetComparison2}, on the other hand, favors the \textbf{Gamma Resized} dataset in training \texttt{box\_loss} a \texttt{cls\_loss}. These differences are 36\% and 31\%; however, these metrics show the training data. More relevant data are validation losses and metrics from the \ref{expDatasetComparison1}, which favor the \textbf{Gamma} dataset. These results suggest that the \textbf{Gamma Resized} is performing better on training data; however, it is worse in generalization, specifically in the validation part of the dataset.
 
-The \textbf{Gamma} dataset is performing better than other datasets and is better at generalization, mostly due to the greater amount of synthetic data, which allows the model to learn the features of the objects. Because of that, this dataset was chosen for further testing and final deployment.
+The \textbf{Gamma} dataset is performing better than other datasets and is better at generalization, mostly due to the greater amount of synthetic data, which allows the model to learn the features of the objects. And therefore, it was chosen for further testing and final deployment.
 
-\subsection{Comparing YOLO version}
-To Be Done - how different YOLO models compare in accuracy and speed, waiting for last model to export
+\subsection{Comparing accuracy of YOLO versions}
+Different versions of the same model family behave differently; as their architectures change, so do their performance and accuracy. Therefore, three different versions of YOLO models were tested. All models are using the pretrained \textit{Nano} version from Ultralytics.
 
-\subsection{Comparing export options}
-To Be Done - onnx support formatting to CPU, GPU, NPU, etc ... different export, different speeds, waiting for last model to export
+\begin{table}[hbt]
+\label{expYoloVersions1}
+\caption{Comparison of YOLO versions. Higher values are preferred.}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Version                  & epoch    & time     & precision & recall  & mAP50   & mAP50-95 \\ \hline
+8                               & 89       & 11959.9  & 0.97643   & 0.97336 & 0.98958 & 0.9804   \\ \hline
+11                              & 35       & 5394.61  & 0.95968   & 0.97174 & 0.97876 & 0.96871  \\ \hline
+26                              & 57       & 9500.06  & 0.97766   & 0.96016 & 0.98154 & 0.96982  \\ \hline
+8 to 26 $\Delta$\% & 43.83562 & 22.92493 & 0.12589   & 1.36539 & 0.81578 & 1.08501  \\ \hline
+\end{tabular}
+
+\label{expYoloVersions2}
+\caption{Comparison of YOLO versions. Lower values are preferred.}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Model versions & t/box\_loss & t/cls\_loss & v/box\_loss & v/cls\_loss \\ \hline
+8              & 0.23209         & 0.32786         & 0.1541        & 0.14738       \\ \hline
+11             & 0.28223         & 0.46873         & 0.17432       & 0.19751       \\ \hline
+26             & 0.33584         & 0.38488         & 0.17799       & 0.13504       \\ \hline
+$\Delta$\% difference between 8 and 26      & 36.53619        & 16.00022        & 14.38767      & 8.73876       \\ \hline
+\end{tabular}
+\end{table}
+
+Tables \ref{expYoloVersions1} and \ref{expYoloVersions2} compare YOLO versions 8, 11, and 26. Based on the metrics from the table \ref{expDatasetComparison1}, the best performing models are YOLO 8 and YOLO 26, with YOLO 8 being slower to train but \textasciitilde 1\% more accurate in \texttt{mAP50} and \texttt{mAP50-95} metrics. Table \ref{expYoloVersions2} shows similar results where YOLO 8 is outperforming other YOLO versions, except in validation class loss.
+
+\subsection{Comparing inference latency on different export architectures}
+Object detection models in this project are used on mobile devices with limited resources. Therefore, a combination of accuracy and latency needs to be considered. The \ref{expYoloVersionsSpeed} table shows the runtime performance of each tested model with different optimizations. Trained models can be exported for different architectures. While it is generally accepted that GPU and NPU are preferred for machine learning and neural networks, more budget oriented devices might not utilize these features. A great example would be mobile devices used for this testing; performing object detection tasks using the Neural Networks API (NNAPI) was 4x slower than running these models on a device's CPU. 
+
+These values might differ based on the device's hardware capabilities. However, based on these results, it is recommended to include multiple models and allow users to either switch between them or create an automatic solution. Different model architectures and optimizations are generated by the Dataset Creator on export.
+
+Further, this table shows a significant difference in inference latency between versions, with an average difference of 20 milliseconds between the YOLO 8 and YOLO 26 versions. 
+
+\begin{table}[hbt]
+\caption{Comparison of inference latency with different export and Detector architectures.}
+\label{expYoloVersionsSpeed}
+\centering
+\begin{tabular}{|cccc|}
+\hline
+\multicolumn{1}{|c|}{}        & \multicolumn{1}{c|}{CPU}     & \multicolumn{1}{c|}{GPU}     & NPU     \\ \hline
+\multicolumn{4}{|c|}{YOLO 8}                                                                          \\ \hline
+\multicolumn{1}{|c|}{average} & \multicolumn{1}{c|}{134.356} & \multicolumn{1}{c|}{171.141} & 578.837 \\ \hline
+\multicolumn{1}{|c|}{median}  & \multicolumn{1}{c|}{130.475} & \multicolumn{1}{c|}{167.663} & 575.477 \\ \hline
+\multicolumn{4}{|c|}{YOLO 11}                                                                         \\ \hline
+\multicolumn{1}{|c|}{average} & \multicolumn{1}{c|}{122.011} & \multicolumn{1}{c|}{124.901} & 535.586 \\ \hline
+\multicolumn{1}{|c|}{median}  & \multicolumn{1}{c|}{118.857} & \multicolumn{1}{c|}{121.730} & 534.213 \\ \hline
+\multicolumn{4}{|c|}{YOLO 26}                                                                         \\ \hline
+\multicolumn{1}{|c|}{average} & \multicolumn{1}{c|}{110.331} & \multicolumn{1}{c|}{112.087} & 498.623 \\ \hline
+\multicolumn{1}{|c|}{median}  & \multicolumn{1}{c|}{106.385} & \multicolumn{1}{c|}{109.686} & 495.079 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Overall conclusion}
+Based on the measured results, the most accurate model is \textbf{YOLO 8} trained on the \textbf{Gamma} dataset. However, the best performing model, when considering both accuracy and latency, is \textbf{YOLO 26} trained on the \textbf{Gamma} dataset.
+
+The best export architecture was the \textbf{YOLO 26 CPU}. This, however, is hardware dependent, and other devices with more suitable hardware configurations may perform better on NNAPI enabled detectors.
+
+For the precision detection mode, where accuracy is preferred, a model trained using \textbf{YOLO 8 Medium}, instead of the \textbf{Nano} pretrained model, was used.
+
+The \textbf{Yolo 11} was outperformed in latency and accuracy by other YOLO versions. However, it achieved the best accuracy compared to the time it took to train the model. This makes it the best for prototyping, and it is recommended to use it for Dataset Creator models for annotating data, where overall latency and accuracy might be less beneficial than the total time it took to achieve acceptable accuracy.
 
 %=========================================================================
 

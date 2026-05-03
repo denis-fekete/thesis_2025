@@ -1,1 +1,13 @@
 \chapter{Conclusion}
+
+Enhancing board games using computer vision on mobile devices requires developers to fine tune each application for the specific game. However, the foundations of these applications are mostly similar, each requiring a camera setup, detecting objects, loading assets, and storing user data. The goal of this thesis was to create a library containing these functionalities and providing a simple way for developers and hobbyists to create these applications. All of this was achieved while maintaining a modular approach and not forcing developers into a closed system that cannot be further fine tuned.
+
+The developed Kotlin library is built around Android's CameraX and OpenCV for image manipulation. Furthermore, splitting CVLiBG into two modules allows it to be relatively lightweight and to include Open Neural Network Exchange only as an option, should the developers choose to use it. The overall setup needed is relatively trivial as it mostly requires a few UI elements and building the camera controller alongside detectors.
+
+During the development of the demonstrative application and the creation of the dataset for said application, I, as the author, encountered frustrating behavior from open source alternatives for annotating the image data. This frustration led to the development of an all in one solution for annotating, generating synthetic data, and in-application training of object detection models. 
+
+
+
+Future extensions of the library could include other popular inference runtimes such as TensorRT, which would give developers more options for optimization on different hardware configurations. "Same segmentation and text recognition"
+
+\textbf{TBD}

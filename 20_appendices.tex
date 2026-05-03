@@ -43,25 +43,26 @@ dataset-creator
 % ===========================================================================================
 
 
-\section{Installing mobile library with Android projects}
+\chapter{Installing mobile library with Android projects}
 \label{mobileInstall}
-\textbf{TBD}:
+Computer Vision Library For Board Games is compiled with \textbf{JVM target 11} and \texttt{Kotlin 2.0.21}. Projects should use Kotlin version \textbf{2.0.x} or newer compatible versions.
 
-\subsubsection{settings.gradle.kts:}
+To include the library in the Android project, it is necessary to add the Jitpack repository. This is done inside the \textbf{settings.gradle.kts} file, in the project's root folder:
 \begin{verbatim}
     dependencyResolutionManagement {
-		repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-		repositories {
-			mavenCentral()
-			maven { url = uri("https://jitpack.io") }
-		}
-	}
-\end{verbatim}
-
-\subsection{build.gradle.kts}
-\begin{verbatim}
-    dependencies {
-        implementation("com.github.denis-fekete:
-            computer_vision_library_for_board_games:Tag")
+        repositories {
+            mavenCentral()
+            maven { url = uri("https://jitpack.io") }
+        }
     }
 \end{verbatim}
+
+Next, add the library dependency to the module's \textbf{build.gradle.kts} configuration file. 
+\begin{verbatim}
+    dependencies {
+        implementation("com.github.denis-fekete:cvlibg:0.9.8")
+        implementation("com.github.denis-fekete:cvlibg-yolo-onnx:0.9.8")
+    }
+\end{verbatim}
+
+The \textbf{0.9.8} tag should be replaced with the desired version, which can be found at: \url{https://jitpack.io/#denis-fekete/computer_vision_library_for_board_games}

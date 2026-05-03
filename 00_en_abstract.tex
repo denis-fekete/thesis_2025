@@ -1,6 +1,6 @@
 This thesis proposes an end-to-end object detection pipeline for developers aiming to create an Android application for smartphones that utilizes object detection to recognize game objects. The proposed pipeline is divided into two parts.    
 
-CVLiBG is an Android library written in Kotlin. Its purpose is to wrap camera control, object detection, and the display of detected objects into an interface like solution that can be used as a base for applications and built upon. The library contains Open Neural Network Exchange and OpenCV based image analyzing algorithms for YOLO models. These can be expanded upon using the modular interface, should the developers choose to implement their own solutions.
+CVLiBG is an Android library written in Kotlin. Its purpose is to wrap camera control and object detection related functionalities into simple, reusable, and  modular components for developers to utilize. CVLiBG is built around the OpenCV library, with an additional module using Open Neural Network Exchange Runtime for YOLO object detection models. These so called Detectors can be expanded upon using the modular interface, should the developers choose to implement their own solutions.
 
 The second part of this thesis is an application called Dataset Creator that aims to help developers create an image dataset used for training neural networks. This application also provides data augmentation and an in-application training method with pretrained Ultralytics models.
 
