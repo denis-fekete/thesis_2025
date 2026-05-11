@@ -22,7 +22,7 @@ This section compares models trained on different datasets and their export opti
 \label{hardwareConfiguration}
 \begin{tabular}{|cc|}
 \hline
-\multicolumn{2}{|c|}{Model training}                         \\ \hline
+\multicolumn{2}{|c|}{Model training}                            \\ \hline
 \multicolumn{1}{|c|}{CPU}        & AMD Ryzen 4600H               \\ \hline
 \multicolumn{1}{|c|}{GPU}        & NVIDIA RTX 2060 Mobile        \\ \hline
 \multicolumn{1}{|c|}{GPU Memory} & 6GB                           \\ \hline
@@ -32,9 +32,6 @@ This section compares models trained on different datasets and their export opti
 \multicolumn{1}{|c|}{GPU}        & Mali-G615 MC2                 \\ \hline
 \multicolumn{1}{|c|}{Memory}     & 12GB                          \\ \hline
 \end{tabular}
-\end{table}
-
-\begin{table}[hbt]
 \label{datasetTable}
 \caption{Table of used dataset for the experiments. The \textbf{xN} represents a \textbf{N} synthetic data generated per image, \textbf{+ org} refers to unmodified, original, data was used as well.}
 \centering
@@ -204,7 +201,9 @@ Version                  & epoch    & time     & precision & recall  & mAP50   &
 26                              & 57       & 9500.06  & 0.97766   & 0.96016 & 0.98154 & 0.96982  \\ \hline
 8 to 26 $\Delta$\% & 43.83562 & 22.92493 & 0.12589   & 1.36539 & 0.81578 & 1.08501  \\ \hline
 \end{tabular}
+\end{table}
 
+\begin{table}[hbt]
 \label{expYoloVersions2}
 \caption{Comparison of YOLO versions. Lower values are preferred.}
 \centering
@@ -257,5 +256,18 @@ The \textbf{Yolo 11} was outperformed in latency and accuracy by other YOLO vers
 
 %=========================================================================
 
-% For compilation piecewise (see projekt.tex), it is necessary to uncomment it
-% \end{document}
+%=========================================================================
+\section{Evaluation of the Bang! application}
+\label{bangEvaluation}
+
+The assignment of this thesis requires the developed system to be evaluated in a real-world setting during the play of the selected game. Due to time constraints, the evaluation was performed as a small-scale proof-of-concept evaluation. The goal was not to provide statistically significant results but rather to verify whether the proposed workflow can be used during gameplay and whether the developed application provides practical assistance to players.
+
+Dataset Creator was used to create the dataset and train a custom object detection model for the Bang! card game. The trained model was then integrated into the Android application using CVLiBG. The application was tested during gameplay with the goal of observing whether it would help players by utilizing either camera based or manual search to access card information without significantly interrupting the game.
+
+The camera based object recognition was the primary observed interaction method. Players were able to detect cards placed right in front of the camera or at angles or from a reasonable distance. Lighting conditions decreased the accuracy of the models. However, the model performed better than expected, as in some cases, due to the nature of object detection, the model was able to recognize the overall structure of the card, while the text remained hard to read for humans.
+
+The evaluation also showed the importance of the manual search functionality. Some cards may be held by other players, placed at a distance, partially covered, or visible only for a short time. In these cases, manually searching for the card allowed the user to access the same information without interrupting the game or asking another player to show the card again.
+
+Several limitations were observed during testing. Recognition quality depended on each card, as some cards were similar to each other, mainly weapons, which led to the wrong class being detected. The use of the application in more challenging lighting conditions led to a drop in accuracy. The application is therefore most useful when detection is combined with a manual search, rather than relying only on camera recognition. Another limitation is that the evaluation was performed on a small scale and does not provide statistically significant evidence about the improvement of the gameplay experience.
+
+Despite these limitations, the evaluation demonstrated that the proposed tools can be used together to create a functional assistant application. The Dataset Creator supported the preparation of the object detection model for the specific game, while CVLiBG simplified its integration into the Android application. The resulting application was able to recognize selected Bang! cards, display relevant information, and provide an alternative manual access path when recognition was not possible. This confirms the practical feasibility and usability of the proposed workflow.

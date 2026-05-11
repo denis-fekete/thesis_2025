@@ -1,80 +1,79 @@
 
-\chapter{Implementation of Dataset Creator application}
+\chapter{Design and implementation of Dataset Creator}
 \label{datasetCreator}
+During the initial development of the demonstration application, it became clear that while CVLiBG simplifies the process of integrating object detection into mobile applications, it does not solve the whole process of creating these applications. CVLiBG requires an object detection model capable of detecting game specific objects. However, these models may not always be available, especially for newer or more niche games. Therefore, developers may be forced to create them from scratch.
 
-During the initial development of the application demonstrating the capabilities of the CVLiBG, I, as the author, encountered obstacles slowing down the process of creating an application. These problems were mostly related to gathering and annotating image data, and a solution was proposed as part of this thesis.
+The Dataset Creator was originally motivated by the need to generate synthetic data for training the models. However, during development, several practical issues appeared, such as switching between different applications, converting datasets between formats, slow annotation workflows, and instability of some open-source tools, which in some cases resulted in data loss. This motivated an expansion of this application from a synthetic data generator into a small, controlled, all-in-one solution that supports raw image data, annotation, synthetic data generation, and model training inside a single application.
 
-The CVLiBG expects developers to have a neural network capable of detecting objects specific to the game. Obtaining trained neural networks for object detection of game-specific objects may not always be possible, and developers will be forced to create them from scratch.
-The Dataset Creator aims to help developers with this task. This desktop application focuses on image data annotation, enhancing the data with synthetic data generation, saving and exporting these datasets in a format that is ready to be used for training, and lastly, lightweight training of these models within the application.
+However, Dataset Creator was not designed as a replacement for specialized annotation tools, augmentation libraries, or training platforms. Its purpose is to provide a single, lightweight solution that connects these tasks. This makes it suitable for developers who need a usable model for CVLiBG with minimal setup, even at the cost of efficiency.
 
 \begin{figure}[hbt]
 	\centering
-	\includegraphics[width=0.98\textwidth]{obrazky-figures/project_scheme.pdf}
-	\caption{Scheme of project structure.}
+	\includegraphics[width=1.0\textwidth]{obrazky-figures/dataset_creator_scheme.pdf}
+	\caption{Workflow supported by Dataset Creator for preparing object detection models for CVLiBG.}
 	\label{ProjectScheme}
 \end{figure}
 
-As shown in Figure~\ref{ProjectScheme}, the purpose of this tool is not to provide a way to gather raw image data, let alone labeled data, for training these models. The application also does not provide state-of-the-art training methods with the most advanced and efficient techniques. However, it does provide a simplification and solution for this problem. Neural networks created by the Dataset Creator can be used by the CVLiBG; however, the use of this tool is not mandatory, and other \textit{"external"} resources may be used instead.
+% =======================================================================================
+
+% =======================================================================================
 
 
-% ===========================================================================================
+\section{Used technologies}
+The Dataset Creator should be usable by developers on all operating systems, as Android development is not exclusive to a single operating system. Therefore, it is necessary to use cross-platform frameworks. Even though the Dataset Creator is part of this thesis, CVLiBG must be usable independently. Similarly, the Dataset Creator can be used only as an annotation or dataset preparation tool, without using the mobile library. Therefore, all data needed to make datasets must be saved in one of the standard formats, allowing users of the application to convert datasets into other formats using external tools, should they desire to.
 
-% ===========================================================================================
-
-
-\section{Design of the Dataset Creator}
-The Dataset Creator should be usable by developers on all operating systems, as Android development is not exclusive to a single operating system. Therefore, it is necessary to use multi-platform frameworks. Also, while the \textbf{the Dataset Creator} is part of this thesis, CVLiBG should be usable for developers who might want to use it only as an annotation/labeling tool or skip the use of \textbf{the Dataset Creator} entirely. Therefore, all metadata about the saved datasets must be saved in one of the standard formats, allowing users of the application to convert datasets into other formats using external tools, should they desire to.
-
-\subsection{Language for developing Dataset Creator}
+\subsection{Python}
 There are plenty of options for choosing a library or framework that supports desktop development. Most of these languages support multi-platform development. However, some of them, like C++ would require multiple binaries or building from source. On the other hand, interpreted languages such as Java provide more seamless multi-platform deployment, and the code from the mobile applications could be shared with the desktop dataset application. 
 
-However, while Java has many positives, it is also known to be a verbose language with more code overhead. Python, on the other hand, seems to be more popular for neural networks and object detection in general. Should the use case of this application require raw computational performance, a different language such as C++ or Java, which are generally faster than Python \footnote{Java versus Python performance benchmarks on PlanningAI models: \url{https://timefold.ai/blog/java-vs-python-speed\#so-how-fast-is-timefold-solver-for-python}}. However, as the main purpose of this application is to be usable and provide nimble multi-platform development, Python is preferred for this task. 
+However, while Java has many positives, it is also known to be a verbose language with more code overhead. Python, on the other hand, seems to be more popular for neural networks and object detection in general. 
 
-\subsection{Choosing library or framework for desktop development}
-Many modern frameworks support multi-platform development. The list became a bit narrower by choosing Python as the main language. Options such as Kivy, Tkinter, PyQt, PySide, Flet, and many more could be found as fully fledged development frameworks; some of them even support mobile development. Qt \footnote{What is Qt?: \url{https://wiki.qt.io/About_Qt}} is a cross-platform application development framework for desktop, embedded, and mobile applications. It is supported and used by many companies; however, it was chosen mainly because I, as the author, have previous experience with this framework, which allowed smoother and faster development of the application.
+\subsection{PySide and Qt}
+Many modern frameworks support multi-platform development. The list became a bit narrower by choosing Python as the main language. Options such as Kivy, Tkinter, PyQt, PySide, Flet, and many more could be found as fully fledged development frameworks; some of them even support mobile development. 
 
-There are two implementations of Qt for Python: PyQt and PySide. Both of these versions are very similar nowadays, and the main difference comes from who manages the projects. PyQt is managed by Riverbank Computing Ltd. \footnote{PyQt about: \url{https://www.riverbankcomputing.com/software/pyqt/intro}}, while PySide is managed and maintained by The Qt Company \footnote{PySide6, Qt for Python: \url{https://doc.qt.io/qtforpython-6/}}. The most notable difference is licensing. PyQt is available under GPL or commercial license, while PySide uses a more permissive LGPL license \footnote{Licensing differences between PyQt and PySide: \url{https://www.pythonguis.com/faq/pyqt6-vs-pyside6/\#licensing}}. While this project will be open and not used for commercial purposes, the more permissive license is preferred. Therefore, PySide was chosen as the framework for desktop development.
+Qt\footnote{What is Qt: \url{https://wiki.qt.io/About_Qt}} is a multi-platform application development framework for desktop, embedded, and mobile applications. It is supported and used by many companies; however, it was chosen mainly due to having previous experience with this framework, which allowed smoother and faster development of the application.
 
-\subsection{Creating user interface}
-UI for the application was created using the \textbf{QtDesigner}, which allows developers to create windows and widgets in a friendly graphical user interface environment. The outputs of the \textbf{QtDesigner} are \texttt{.ui} files. These files can be loaded dynamically using \texttt{QUiLoader} or compiled into Python files. Dynamically loading files is easier, as it does not require recompiling files after each change in the UI. However, using this method, VSCode loses the ability to provide static checking, which is provided by the PyLance extension. This extension helps with cleaner and less error prone code. Therefore, the other approach was chosen, and the project contains \texttt{.ui} and compiled \texttt{.py} files that include the UI elements. These are loaded into the widgets, each hosting different functionality.
+There are two implementations of Qt for Python: PyQt and PySide. Both of these versions are very similar nowadays, and the main difference comes from who manages the projects. PyQt is managed by Riverbank Computing Ltd.\footnote{PyQt about: \url{https://www.riverbankcomputing.com/software/pyqt/intro}}, while PySide is managed and maintained by The Qt Company\footnote{PySide6, Qt for Python: \url{https://doc.qt.io/qtforpython-6/}}. The most notable difference is licensing. PyQt is available under GPL or commercial license, while PySide uses a more permissive LGPL license\footnote{Licensing differences between PyQt and PySide: \url{https://www.pythonguis.com/faq/pyqt6-vs-pyside6/\#licensing}}. While this project will be open and not used for commercial purposes, the more permissive license is preferred. Therefore, PySide was chosen as the framework for desktop development.
 
-Compiled \texttt{.py} files are then connected to specific classes which are derived from the \texttt{AbstractTabWidget}. This allows each tab widget to contain only functional code for the specific task, such as managing datasets or labeling data, etc.
+\subsection{OpenCV}
+OpenCV was also used in the Dataset Creator for image loading, saving, and manipulation. Its main role is in the synthetic data generation process, where image data is resized, letterboxed, and blurred using OpenCV's methods.
 
-\subsection{User Settings}
-The Dataset Creator stores values from the last session of the user. These settings are stored in the root folder of the application, inside the \texttt{settings.json}. If this file does not exist, it will be created and filled with the \texttt{default\_settings.json} from the \texttt{src/app/settings} directory.
+\subsection{Ultralytics}
+\label{Ultralytics}
+Ultralytics provides pretrained YOLO models under AGPL license. Their official site states that their aim is to make AI easy and accessible to individuals and businesses\footnote{Ultralytics About: \url{https://www.ultralytics.com/about}}, which also aligns with this thesis. Dataset Creator utilizes Ultralytics' YOLO pretrained models as a base, and further trains these models to fine-tune them for a specific board game objects. Ultralytics' Python library also provides ready to use training methods. This all in one solution allows for simplicity during the training of models, which can be further exported into the more versatile Open Neural Network Exchange format (see \ref{chosingInferenceRT}).
 
-% ===========================================================================================
 
-% ===========================================================================================
+% =======================================================================================
 
-\section{Managing the datasets}
+% =======================================================================================
 
-The rest of this chapter focuses on each page providing different functionality. The \textbf{Dataset} page hosts actions related to the importing and exporting of image datasets.
-
-\begin{figure}[hbt]
-	\centering
-	\includegraphics[width=0.70\textwidth]{obrazky-figures/datasetManager_screenshot.png}
-	\caption[Data Creator screenshot -- Dataset loading]{Screenshot from the Dataset Creator, page for managing datasets.}
-	\label{DatasetManagerScreenShot}
-\end{figure}
+\section{Dataset representation and management}
+Dataset management represents the first step of the Dataset Creator workflow. In this part of the application, existing datasets can be imported and exported into a suitable format for training with Ultralytics.
 
 \subsection{Importing dataset}
-Imported data will be gathered from the root of the folder and recursively searched for all image files (\texttt{.png} and \texttt{.jpg} extensions), text files containing annotations, and a single \texttt{data.yaml} file. Image data should be paired with text data with \texttt{.txt} extension; both files must have the same name for the importer to recognize them as an image data and label data pair. These files can be in separate directories, as long as their names match. It is recommended to export the dataset, even without labeled data, with \texttt{Generate names from the class} options, which also uses a hash function to avoid conflicts. 
+The first step of any dataset is importing data; this can either be annotated or "raw" image data. The responsibility of Dataset Creator is to load these files and make them usable for further processing steps.
 
-Imported image and label data are shown in a customized \texttt{QTreeView} to display loaded \texttt{ImageSamples}.
+Based on the provided root directory, image data with \texttt{.png} and \texttt{.jpg} file extensions will be recursively searched for. Likewise, text files will be searched for. These will be grouped into pairs of image files and text files containing annotations. Files can be separated as long as they have matching file names. All datasets must contain Ultralytics' dataset configuration file name \texttt{data.yaml}\footnote{Object Detection Datasets Overview: \url{https://docs.ultralytics.com/datasets/detect/\#ultralytics-yolo-format}}. 
 
-Datasets using the Ultralytics YOLO format \footnote{Object Detection Datasets Overview: \url{https://docs.ultralytics.com/datasets/detect/\#ultralytics-yolo-format}}, which is also used by the application, contain a \texttt{data.yaml} file. This file includes the paths to training and validation data, as well as the object class values paired with string values. These pairs are also used by the Dataset Creator tool to show the names of the classes instead of their numerical representation. It is also possible to rename, remove, and add classes; however, changing their index is not supported.
+For existing datasets, application expects the Ultralytics configuration file
+\texttt{data.yaml} to be present. For newly created datasets, this file is generated and
+managed automatically by Dataset Creator.
 
-% ===========================================================================================
+This file is also used by the Dataset Creator to translate integer class indexes into strings that are used for annotating.
+
+\subsection{Representation of annotated images}
+Imported image and label data are paired into \texttt{ImageSample} objects. These contain the path to the original files, as they are not loaded on import. If this were not the case, memory usage for even relatively small datasets, with only a few hundred image files, could be unmanageable for most personal computers. This approach allows for on-demand loading of image data. 
+
+Image samples also contain a list of \texttt{LabelBox} objects. These represent labels, annotations, or bounding boxes. These simple objects contain coordinates, width, height, and class index of the detection they represent. These are used as the ground truths for training. 
+
+% ===============================================================================
 
 \subsection{Exporting datasets}
-\textbf{Exporting} is another part of the dataset tab. The whole dataset with annotated data is exported to the specified path in the format used by the Ultralytics YOLO datasets. Application supports these export related options: 
+\textbf{Exporting} is another part of this application. As mentioned before, Dataset Creator uses the Ultralytics YOLO format and enables synthetic data generation of exported datasets with different options: 
 
-\bigskip
 \begin{itemize}
   \item {\textbf{Training data percentage} will set the amount of data used for training, the rest will be used for validation.}
   
-  \item {\textbf{Generate name from the class} replaces images and text label names with hashed name \texttt{classname\_hash}, where the classname is the detected class, and hash is an image data hashed into a 16 character string. Images with multiple classes will be named \texttt{mixed\_hash}.}
+  \item {\textbf{Generate name from the class} replaces images and text label names with the string representation of detected class and hash generated from the image. Images with multiple classes will be named \texttt{mix\_hash}. This option is mostly for manual inspection of data and it is not required.}
   
   \item {\textbf{Separate classes into subdirectories} option sorts the images and labels based on their detected class into subdirectories. Images with multiple classes will be placed into a mixed subdirectory.}
   
@@ -83,73 +82,58 @@ Datasets using the Ultralytics YOLO format \footnote{Object Detection Datasets O
   \item {\textbf{Generate synthetic data for validation} enables generating of synthetic data for the validation part of the dataset.}
   
   \item {\textbf{Export original image} enables/disables the export of the original image. If this option is disabled, only the generated synthetic data will be exported.}
-  
-  \item {\textbf{Export worker threads} is the number of worker threads created for exporting, allowing parallelization of the export task.}
 \end{itemize}
-\bigskip
+
+Exporting is a computationally heavy operation, especially when synthetic data are being generated. Therefore, it is necessary to use parallelization of the task, leaving the UI on the main thread and heavy tasks on another; otherwise, the application would just freeze and continue using resources until the job is done. Because of that, Dataset Creator allows users to split this task across more threads using the \textbf{Export worker threads} option.
+
+% ==============================================================================
+
+% ===========================================================================
 
 
-% ===========================================================================================
+\section{Image annotation}
+Image annotation is one of the main functions of the Dataset Creator. The \textbf{Image labeling} page provides tools for manual and automatic data annotation.
 
-% ===========================================================================================
+\subsection{Representation of annotated data}
+Annotating or labeling image data is done by creating rectangle bounding box-like objects. These objects are called \texttt{ImageLabelBoxes} and are used for the graphical representation of the annotated data. These boxes can be created, moved, resized, or deleted. The colors of these boxes can be configured using color pickers. This should increase visibility based on the image and its background, as well as decrease eye-strain during manual annotation.
 
+This page also contains a view for browsing image samples. Samples can be changed by clicking on a specific sample, using \texttt{Next} and \texttt{Previous} buttons, or with the keyboard shortcuts \texttt{"Q"} and \texttt{"E"}.
 
-\section{Labeling/image annotation}
-The \textbf{Image labeling} page contains functionality for annotating the image data. 
-
-\begin{figure}[hbt]
-	\centering
-	\includegraphics[width=0.70\textwidth]{obrazky-figures/dataLabeler_screenshot.png}
-	\caption[Data Creator screenshot -- Labeling]{Screenshot from the Dataset Creator, page for annotating/labeling image data.}
-	\label{DataLabelerScreenShot}
-\end{figure}
-
-\subsection{Image label boxes for annotating the image data}
-Annotating or labeling image data is done by creating rectangle bounding box-like objects. These objects are called \texttt{ImageLabelBoxes} and are used for representing the annotated data in the application. Creating a box can be done by clicking \textbf{New label} or by pressing the keyboard shortcut \textit{"Space"}. These boxes can be moved and resized. 
-
-\texttt{ImageLabelBoxes} can be in two states: selected and unselected. All actions related to label boxes can be performed only on the selected box. The colors representing the selected and unselected boxes can be changed with color pickers in the left toolbar of the window.
-
-Newly created boxes will be assigned a \textit{default} or previously selected label value. The \texttt{ImageLabelBoxes} with the \textit{default} value cannot be saved, and users will be warned with a red background in the \texttt{ImageSampleTreeView}. Deleting selected boxes is done by pressing the \textbf{Delete label} or by pressing the \textit{"X"} shortcut on the keyboard. Likewise, creating a new label box can be done with \textit{"Space"} shortcut or the \textbf{New label} button.
-
-\subsection{ImageSampleTreeView}
-\texttt{ImageSampleTreeView} is located on the left side of the page. Its purpose is to switch between the loaded images, also called image samples, which in code are represented by the \texttt{ImageSample} class. Switching can be done by clicking on the image sample, using the \textbf{Next} and \textbf{Previous} buttons, or by using the keyboard shortcuts \textit{"Q"} and \textit{"E"}.
+Deleting selected boxes is done by pressing the \texttt{Delete label} or by pressing the \texttt{"X"} shortcut on the keyboard. Likewise, creating a new label box can be done with \texttt{"Space"} shortcut or the \texttt{New label} button. 
 
 \subsection{Label classes}
-The right side of the page contains label controls using the \texttt{LabelSelectorTreeView}. This view contains the index \textit{"\#"} of the label and its name. Both of these values are stored in the \texttt{data.yaml} file. Single clicking on one of the elements from the tree view will change the currently selected \texttt{ImageLabelBox}'s label to the clicked one. Double-clicking on the label enables the editing mode in which the user can edit the name of the label. The index of the labels cannot be changed. These labels can be added and deleted using the \textbf{New} and \textbf{Delete} buttons. Deleting one label will update the indexes of all other labels with a higher index to move down.
+Each label box requires its value; otherwise, it will just be a bounding box without a description. These labels can be chosen from the label browser. This browser contains the index \textit{"\#"} of the label and its name. These values are loaded and saved to the \texttt{data.yaml} file. 
+
+Single click on the label will change the currently selected \texttt{ImageLabelBox}. Double-clicking on the label enables the editing mode in which the user can edit the name of the label. The index of the labels cannot be changed. These labels can be added and deleted using the \texttt{New} and \texttt{Delete} buttons. Deleting one label will update the indexes of all other labels with a higher index to move down.
+
+It should be noted that newly created boxes will be assigned a \texttt{default} or previously selected label value. The \texttt{ImageLabelBoxes} with the \texttt{default} value cannot be saved, and users will be warned with a red background in the image sample browser. 
 
 \subsection{Automatic detection}
-This page of the Dataset Creator contains the automatic object detection functionality. All the controls are located in the top section of the page. Models must be opened by providing a path or using the \textbf{Open} button, which will launch the operating system explorer. The \textbf{Load} button will load the model. After the model is successfully loaded, the \textbf{Detect} button will be enabled. The detection functionality will try to detect objects in the current \texttt{ImageSample}. Automatic detection does not account for already created \texttt{ImageLabelBoxes} in the image sample. Automatic detection can be activated with the \textit{"Tab"} key shortcut. The current version of the Dataset Creator supports only ONNX Runtime for YOLO models.
+Automatic detection is intended to speed up the annotation process. This can be useful when annotating larger datasets. Especially because it switches from manually creating every bounding box to inspecting and correcting already created ones.
 
-% ===========================================================================================
+However, this functionality also has several limitations. It requires a previously trained model that is compatible with the Dataset Creator, and the quality of the generated annotations depends on the accuracy of that model. Therefore, automatic detection should be treated as an annotation aid rather than a replacement for manual review.
 
-% ===========================================================================================
+This functionality requires opening the model, loading it, and selecting the threshold value for filtering. Annotation is done per image with \texttt{Detect} button or by pressing the keyboard shortcut \texttt{"Tab"}. 
 
+Automatic detection does not account for already created \texttt{ImageLabelBoxes} in the image sample. Therefore, running automatic detection on an already annotated image may create duplicate or overlapping boxes, which must be checked manually.
 
-\section{Synthetic data creator}
-Object detection models trained on small datasets are prone to \textbf{overfitting}. To increase the dataset's size and improve accuracy, Dataset Creator supports creating synthetic data for the training of neural networks.
+The current version of the Dataset Creator supports only ONNX Runtime for YOLO models.
 
-The synthetic data are generated during the export process. Therefore, this page does not generate synthetic data; instead, it provides a way to create and edit filters used for the synthetic data generation. An explanation of data augmentation and synthetic data is discussed in see \ref{dataAugmentation}. 
+% ==================================================================================
 
-The middle of the page shows a preview of the filter. If the user has not selected any image sample in the \textbf{Image labeling} tab, no preview will be shown. 
+% ==================================================================================
 
-On the right side of the page is the \texttt{FilterPresetTreeView}, showing the current filters used by the dataset. These filters can be created or deleted using the \textbf{New} and \textbf{Delete} buttons. Filters can also be double clicked to change the filter's name. Lastly, these filters are stored in the user settings (the \texttt{settings.json}); therefore, they are movable between projects/datasets.
+\section{Generating synthetic data}
+Object detection models trained on small datasets are prone to \textbf{overfitting} (see~\ref{overfitting}). To increase the dataset's size and improve accuracy, Dataset Creator supports creating synthetic data for the training of neural networks.
+
+\subsection{Filter creation}
+The synthetic data are generated during the export process. Therefore, this page does not generate synthetic data; instead, it provides a way to create and edit filters used for the synthetic data generation. An explanation of data augmentation and synthetic data is discussed in Section~\ref{dataAugmentation}. 
+
+Filters can be selected from the list of filters; they can also be created, renamed, or removed. These values are stored in the user settings (the \texttt{settings.json}); therefore, they are movable between projects/datasets.
 
 It should be noted that the synthetic data will be exported as finished images with annotated data, which results in additional data and space required by the dataset. However, this format allows datasets to be used outside of the Dataset Creator and may also result in faster training, as the data will not have to be augmented in memory during training.
 
-\subsection{Options for synthetic data generation}
-On the top left side of the window are individual settings changing the behavior of the current filter. Performing enhancements on large images can be lengthy operations; therefore, users should update the preview once they have changed all settings by clicking the \texttt{Save and Apply} button or using the \texttt{Tab} keyboard shortcut. It should be noted that filters are not saved automatically.
-
-\label{syntheticDataGeneration}
-
-\begin{figure}[hbt]
-	\centering
-	\includegraphics[width=1.0\textwidth]{obrazky-figures/synthetic_data_filters.pdf}
-	\caption[Effects of different values for synthetic data creation]{Effects of different values for synthetic data creation from Dataset Creator}
-	\label{SyntheticDataFilters}
-\end{figure}
-
-Individual synthetic data augmentation settings and their descriptions:
-
+\subsection{Customization of synthetic data}
 \textbf{Flipping}, as stated in \cite{dataAugmentation1}, is one of the easiest and most intuitive ways to augment the data. Simple vertical and horizontal flipping of images can create three additional images for training. However, using this method for direction sensitive data \cite{dataAugmentation1} such as letters and numbers might result in inaccurate labels and detection.
 
 \textbf{Blur} is also considered a good addition, especially as it removes noise from images introduced by compression methods, lighting environment, and camera processing.
@@ -158,33 +142,28 @@ The photometric transformations, such as \textbf{Saturation}, \textbf{Brightness
 
 \textbf{Noise insertion} consists of injecting or changing pixel values in an image. This method is a very good solution for positional biases \cite{dataAugmentation2}. This method makes neural networks more robust, as real world data is not always perfect and often contains graphical artifacts \cite{dataAugmentation1}. The most common methods are \textbf{Gaussian} and \textbf{Speckle} methods. The \textbf{Gaussian} method is an additive technique that changes the original pixel value by adding or subtracting a value from it. \textbf{Speckle}, also known as Salt and Pepper, is a spike noise method. It changes pixels to their extremes, either white or black, reminiscent of salt and pepper.
 
-\textbf{Resolution-related} settings allow for a decrease in the size of the dataset and the time it takes to export it.
+\textbf{Resolution-related} settings allow for a decrease in the size of the dataset and may result it faster training, as image will not have to resized during training.
 
 % ===========================================================================================
 
 % ===========================================================================================
 
 \section{Training models in Dataset Creator}
-The training page of the Dataset Creator is a simple training solution for developers who do not have access to a high performance server or who do not know how to use training algorithms. This page is supposed to be an easy, few click solution for users who want to train labeled data inside the Dataset Creator. Therefore, the settings available are the most crucial ones. Therefore, for more efficient model training, the developers should seek different solutions.
+The last part of the Dataset Creator is a training solution based on Ultralytics' python library. This UI based, few click solution is meant for quick and simple training inside the application, using created datasets.
 
-\begin{figure}[hbt]
-	\centering
-	\includegraphics[width=0.70\textwidth]{obrazky-figures/modelTrainer_screenshot.png}
-	\caption[Data Creator screenshot -- Training]{Screenshot from the Dataset Creator, page for training models in application.}
-	\label{ModelTrainerScreenshot}
-\end{figure}
+Therefore, for more efficient model training, the developers should seek different solutions.
 
-The top part of the page is a model selection option for choosing different types of pretrained models used as a backbone. Available models are Ultralytics' YOLO 8, 11, and 26 versions with three model sizes: Nano, Small , and Medium. The next settings directly change the training behavior of the model:
+\subsection{Training options}
+This last page allows changing the settings provided to Ultralytics' trainer. The list of options consists of: pretrained model, model path, project name, training epochs, patience, workers, and batch size.
 
-\begin{itemize}
-  \item {One \textbf{epoch} represents a complete pass of the model over the entire training dataset. Each epoch ends with an evaluation on the validation part of the dataset.}
-  \item {\textbf{Patience} represents the number of epochs after which training will be ended if no improvements in accuracy are achieved.}
-  \item {\textbf{Workers} represent the number of additional workers used during training. This value depends on the hardware capabilities of the machine running the application.}
-  \item {\textbf{Batch size} represents the number of training examples in one training pass. Higher values mean higher memory use.}
-\end{itemize}
+The \textbf{pretrained models} define the backbone and architecture used to create the final fine-tuned model. Available models are Ultralytics' YOLO 8, 11, and 26 versions with three model sizes: Nano, Small, and Medium.
 
-The next settings are used for the path and name of the trained model. The last option is the path to the dataset. It should be noted that the annotated data and synthetic data are only in memory. These values will be stored onto the disk only after export. Therefore, it is necessary to export the dataset before training.
+\textbf{Model path} and \textbf{project name} define where the results will be generated and what name will be used for it.
 
-\subsection{Training neural networks with Ultralytics' pretrained models}
-\label{Ultralytics}
-Ultralytics provides pretrained YOLO models under AGPL license. Their official site states that their aim is to make AI easy and accessible to individuals and businesses \footnote{Ultralytics About: \url{https://www.ultralytics.com/about}}. Dataset Creator uses Ultralytics's YOLO pretrained models for object detection tasks. These pretrained models are further fine tuned with the Ultralytics Python library to detect objects for a specific board game. This all in one solution allows for simplicity during the training of models, which can be further exported into the more versatile Open Neural Network Exchange format (ONNX, see \ref{chosingInferenceRT}).
+A single \textbf{epoch} represents a complete pass of the model over the entire training dataset. Each epoch ends with an evaluation on the validation part of the dataset.
+
+\textbf{Patience} represents the number of epochs after which training will be ended if no improvements in accuracy are achieved.
+
+\textbf{The} number of additional worker threads used during training is referred to as workers. This value depends on the hardware capabilities of the machine running the application.
+
+\textbf{Batch size} represents the number of training examples in one training pass. Higher values mean higher memory use, which also results in faster training.

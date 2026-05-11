@@ -38,9 +38,9 @@ dataset-creator
 \end{verbatim}
 
 
-% ===========================================================================================
+% =======================================================================================
 
-% ===========================================================================================
+% =======================================================================================
 
 
 \chapter{Installing mobile library with Android projects}
@@ -60,9 +60,16 @@ To include the library in the Android project, it is necessary to add the Jitpac
 Next, add the library dependency to the module's \textbf{build.gradle.kts} configuration file. 
 \begin{verbatim}
     dependencies {
-        implementation("com.github.denis-fekete:cvlibg:0.9.8")
-        implementation("com.github.denis-fekete:cvlibg-yolo-onnx:0.9.8")
+        implementation("com.github.denis-fekete:cvlibg:1.0.0")
+        implementation("com.github.denis-fekete:cvlibg-yolo-onnx:1.0.0")
     }
 \end{verbatim}
 
-The \textbf{0.9.8} tag should be replaced with the desired version, which can be found at: \url{https://jitpack.io/#denis-fekete/computer_vision_library_for_board_games}
+The \textbf{1.0.0} tag should be replaced with the desired version, which can be found at: \url{https://jitpack.io/#denis-fekete/computer_vision_library_for_board_games}
+
+% =======================================================================================
+
+% =======================================================================================
+
+% For compilation piecewise (see projekt.tex), it is necessary to uncomment it
+% \end{document}

@@ -1,118 +1,128 @@
 
 \chapter{Developing a Bang! application with CVLiBG and Dataset Creator}
 \label{bangImplementation}
-This chapter starts with basic information about the card game Bang!, followed by creating a first model and an example use of the dataset tool. Next, the chapter continues with the implementation of a mobile application at a higher abstraction level, explaining the design choices.
+This chapter demonstrates the use of the proposed CVLiBG mobile library and Dataset Creator application by creating an application for the Bang! card game. 
+
+The purpose of the developed application is not to fully digitize, automate, or provide a computer opponent. Instead, its aim is to provide quick assistance to players by recognizing cards through the smartphone camera and displaying relevant information. Therefore, this chapter serves as a case study showing how the proposed tools can be used together.
 
 \section{Card game Bang!}
-Bang! is a western style card game for 4 to 7 players, with a suggested age of 8 or older. The game was created by Italian author Emiliano Sciarra \cite{bangWiki}, it was released in 2002 by the Italian publisher DV Giochi. In the Czech Republic and Slovak Republic, the game is released and manufactured by Albi. The game is very popular and has achieved 4 million sales worldwide.
+Bang! is a western style card game for 4 to 7 players, with a suggested age of 8 or older. The game was created by Italian author Emiliano Sciarra~\cite{bangWiki} and it was released in 2002 by the Italian publisher DV Giochi. In the Czech Republic and Slovak Republic, the game is released and manufactured by Albi. The game is very popular and has achieved 4 million sales worldwide.
 
-\subsection{Rules of Bang!}
-At the start of the game, players are randomly assigned one of the roles: Sheriff, Sheriff's Assistant, Bandit, or Renegade. While the game-play is the same for all roles, their end goals are different. \textbf{Sheriff's} role is to get rid of the renegade and all the bandits. The sheriff also gets bonus health; however, everybody knows who the sheriff is, while all other players keep their roles a secret. \textbf{Assistants}, unlike the sheriff, do not receive any additional bonuses, and their goal is to protect the sheriff. \textbf{Bandits}, on the other hand, are targeting all other players. Their win condition is to get rid of the Sheriff. \textbf{Renegade} is the last role and is similar to bandits. However, there can only be one Renegade, and the winning condition of this role is to win the game by getting rid of the Sheriff while the Renegade and Sheriff are the only players left in the game.
+Bang! was chosen due to its popularity, but also because most of its cards do not have text-based descriptions. Instead, the game uses symbols. These are not hard to understand,
+but it may slow down new or returning players, as they must repeatedly read the rules or ask other players. 
 
-Except for the roles, players are also assigned characters. These characters modify how players play the game. For example, \textit{Lucky Duke} allows the player to look at the top two cards and choose one of them instead of drawing at random. \textit{Willy the Kid} removes the limit on how many damaging cards Bang! can be played in one round by the player. And the list goes on.
-
-The core principle of the game is simple: attack other players, defend and heal yourself, and finally stop other players from achieving their goals while trying to achieve yours. The game can be relatively explosive, and players can be taken by surprise if other players group together and start attacking them. The game itself doesn’t stop players from lying, deceiving, and forming groups to attack certain players, which, from personal experience, makes it even trickier and more fun to play.
-
-% ===========================================================================================
-
-% ===========================================================================================
-
-\section{Creating object detection model for Bang! card game}
-To test the capabilities and usability of the proposed Dataset Creator, this tool was used to create an annotated dataset and train object detection models for the Bang! card game.
-
-\subsection{Data gathering and annotating}
-In order to create an object detection model, it is necessary to gather image data with the game cards. These can be found online or taken with a smartphone's camera. Manually annotating a few dozen images might not take too much time; however, once developers start annotating hundreds of images, the task becomes more burdensome. 
-
-To help developers with this problem, the Dataset Creator provides an automatic annotation functionality. This, however, requires a working object detection model capable of recognizing and detecting game objects. The recommended approach is to annotate a few examples of each game object, use synthetic data generation, and utilize this data to train the first model. This model can later be used for annotation, and while the detections might not always be precise, it should speed up the further annotation of image data. 
-
-However, it should be noted that iterating and creating newer models after annotating only a few image data might not be worth the time spent on training. Developers should find a balance based on the amount of time it takes for their machine to train one model.
-
-\subsection{Training the models}
-Before training, it is required to export the dataset. Choosing the correct settings for training is mostly a matter of trial and error, especially since the batch size and number of workers will be limited by the hardware's capabilities of the computer used for the training. Exported datasets are in Ultralytics YOLO model format. These saved datasets can be used for training outside of the Dataset Creator , even by other training solutions; however, conversion might be required. The \textbf{Dataset Creator} is primarily meant for hobbyists and small developers who use their machines for training as well.
-
-% ===========================================================================================
-
-% ===========================================================================================
-
-\section{Implementing mobile application}
-After creating a new project in the integrated development environment of the developer's choice, the library needs to be added to the project's dependencies (see \ref{mobileInstall}).
-
-The starting point of the application is \texttt{MyApp}, which is derived from the \texttt{Application} class. This is where \texttt{DetectorRegistry} entries are defined to prevent mismatched model and \texttt{Detector} versions (see \ref{DetectorRegistry}), as these will be changeable in the settings menu.
-
-The next part is an Android's \texttt{Activity} hosting all the functionalities of the application. Instead of using multiple activities, this application uses only one activity and changes fragments. As this activity will contain use cases and functionality that require the camera, it is necessary to request permission to use it; this can be achieved with \texttt{CommonUtils.checkCameraPermission()} method.
-
-Furthermore, it is necessary to change the \texttt{AndroidManifest.xml} file and add the permission request to use the camera (see \ref{androidManifestExample} for an example of the \texttt{AndroidManifest.xml}).
-
-Navigation is achieved using \texttt{NavHostFragment} \footnote{Android API -- Navigation host fragment:\url{https://developer.android.com/reference/androidx/navigation/fragment/NavHostFragment}} and \texttt{NavigationGraph}. This approach changes the fragments displayed as content while staying inside the same activity. Furthermore, to simplify loading details for each card, a link system was set up.
-% ===========================================================================================
-
-% ===========================================================================================
+This results in a suitable use case for object detection, as these cards can be quickly scanned before a player's turn or during it, without the need to ask the other players, potentially revealing the card to the other players.
 
 
-\section{Fragments}
-Fragments are parts of the UI. By design, these can be swapped without changing the activity, allowing for the reuse of the navigation functionality and logic from the main activity. 
+\subsection{Rules and gameplay of Bang!}
+The core principle of the game is simple: attack other players, defend and heal yourself, and finally achieve your winning condition before others. 
 
-All fragments in this application are derived from \texttt{BaseFragment} (not part of the CVLiBG). This simple class is derived from \texttt{Fragment} and implements automatically generated view binding for each layout, resulting in less error prone and cleaner code \footnote{Android API -- View binding: \url{https://developer.android.com/topic/libraries/data-binding/generated-binding}}.
+The Bang! game starts with players receiving cards equal to their health, which is based on role and character they are playing. While the gameplay is the same for all roles, their end goals are different. The game consists of different types of cards: instant effect, long term effect, role, and character cards. The game is turn based, and players can only initiate action during their turn. There are exceptions to this rule, as some cards can be played as a reaction. 
 
-% ===========================================================================================
+Instant effect cards perform immediate actions, attack other players, take their cards, draw cards from the deck, etc. These cards are usually held by the player and not shown to other players.
 
-\subsection{Life-cycle scope of fragments}
-This application mostly uses \texttt{Fragments}. These have separated fragment lifecycle and view lifecycle. Meaning that while the fragment is kept in memory, its view might be destroyed; such situation occurs when minimizing the application \cite{fragmentLifecycle}. 
+Long term effect cards, on the other hand, are placed in front of the player and modify game mechanics such as range.
+
+Players are assigned characters, which are unique and modify how the game is played for each player. For example, \textit{Lucky Duke} allows the player to look at the top two cards and choose one of them instead of drawing at random.
+
+Role cards define the winning condition for the players. Only the Sheriff is known to all players, while the remaining roles are hidden. The game itself doesn’t stop players from lying, deceiving, and forming groups to attack certain players, which, alongside the hidden roles, adds depth and a social element to the game.
 
 \begin{figure}[hbt]
 	\centering
-	\includegraphics[width=0.5\textwidth]{obrazky-figures/fragment-view-lifecycle.png}
-	\caption{Android's activity lifecycle concepts. Image source: \cite{activityLifecycle}.}
-	\label{preprocessingFigure}
+	\includegraphics[width=0.8\textwidth]{obrazky-figures/card_scans.pdf}
+	\caption{Scan of the "Gatling", "Barile" and "Saloon" cards from the game Bang! game.}
+	\label{gatlingScan}
 \end{figure}
 
-To prevent heavy computations, such as having the camera active and calculating detections in the background while the application is in use, it is necessary to respond to these changes. However, aggressive optimizations might result in repetitive calls to heavy operations, such as loading models from the assets directory.
+% ===========================================================================
 
-% ===========================================================================================
+% ===========================================================================
 
+\section{Creating object detection model for Bang! card game}
+This section demonstrates the use of Dataset Creator for creating a custom fine-tuned object detection model for the Bang! card game. Dataset and models were created in iterative steps, where new image data were annotated, increased in size using synthetic data generation, and then used for training new models.
 
-\subsection{Camera Fragment}
-The \texttt{CameraFragment} is responsible for creating \texttt{CameraController}, providing \texttt{Detectors} to \texttt{ImageAnalyzer}, and connecting its outputs to the UI elements.
-This fragment is responsible for setting up the \texttt{CameraController}, initializing detectors, and adding on-click behavior for user interaction with detected objects. The abstract \texttt{DetectionOverlay's} \texttt{onDetectionClicked} is a callback function invoked on user interaction with detected objects. The lambda function uses the \texttt{Class2LinkService} to convert the integer class value into a string link Id used by the navigation controller to open the details card.
+The resulting model was then integrated into the Android application through CVLiBG.
 
-\begin{verbatim}      
-    detectionOverlay.onDetectionClicked = { detection ->
-        val bundle = bundleOf("id" to class2linkService
-            .items[detection.classIndex]!!.linkId)
-        findNavController().navigate(R.id.cardDetailsFragment, bundle)
-    } 
-\end{verbatim}
+\subsection{Data gathering and model training}
+The first object detection model for the Bang! card game was prepared with a small set of  images captured with the smartphone's camera. To simplify the experiments and serve as a proof-of-concept, the initial dataset contained only two cards. These data were manually annotated in Dataset Creator and exported in the Ultralytics YOLO format.
 
-The \texttt{BangDetectionOverlay} provides a reference to the clicked detection object. This application implements a link system, which allows loading details of each card from a JSON file. These files are a list of JSON objects containing values such as title, image, description, and links to other cards. However, defining these links by the class ID would be tiresome and hard to read for most developers. 
+Synthetic data generation was used to increase the variability of the initial dataset. The generated samples were created from the annotated images and used together with the original data for training directly inside Dataset Creator. 
 
-Because of that, a \texttt{Class2LinkService}, is used to convert \textbf{integer} class values, which are the output retrieved from the \texttt{BangDetectionOverlay}, into \textbf{string-based} link identifiers used for navigation when displaying details for each card or symbol. The service is based on the template \texttt{AssetService} and uses the \texttt{Class2Link} data class.
+Additional image data was gradually added in later iterations. Each iteration focused on a limitation observed in the previous model. The first images were captured mostly from a front facing camera angle, which resulted in the model performing worse when cards were viewed  from other angles. Therefore, the next iteration batches included images captured from angled camera positions and under different conditions. 
 
-Further, it is required to provide \texttt{Detector} classes for the \texttt{CameraController}. This application uses the \texttt{SettingsService} for storing the currently used detectors, which allows users to change detectors and models in settings.
+Previously trained models were then reused for the automatic annotation of new images. The generated annotations still required manual verification, but they reduced the amount of repetitive labeling work.
 
-\begin{verbatim}
-    private fun setupDetectors() {
-        realtimeDetector = DetectorRegistry.createDetector(
-            settingsService.data.realtimeModel)
-        qualityDetector = DetectorRegistry.createDetector(
-            settingsService.data.precisionModel)
-    }
-\end{verbatim}
-
-\label{BangDetectionOverlay}
-This fragment also contains the \texttt{PreviewView}, \texttt{MetricsOverlay} and \texttt{DetectionOverlay} derived class, \texttt{BangDetectionOverlay}. The layout follows the recommended approach with \texttt{PreviewView}, \texttt{BangDetectionOverlay}, and \texttt{MetricsOverlay} stacked on top of each other (see \ref{CameraFragmentOverlays}).
-
-The \texttt{BangDetectionOverlay} defines a \texttt{drawDetections()} method, which contains code for drawing detections onto the screen. It iterates through all detection objects and uses \texttt{the scaleDetectionToScreenRect()} method from the \texttt{DetectionOverlay} to scale detections, as the camera resolution may not match the screen's resolution. 
 
 % ===========================================================================================
 
 % ===========================================================================================
 
+\section{Android application design}
+After training the object detection models with varying inference latency and accuracy, these models were integrated into an Android application using CVLiBG. Application was implemented utilizing CVLiBG's camera handling, object detection, and services as a base.
+
+Game specific parts of the application, such as card descriptions, settings, or navigation, are not part of CVLiBG and are specific to this application. This separation should demonstrate the capabilities of CVLiBG, as it provides object detection infrastructure, while the final application utilizes its features in the context of the Bang! card game.
+
+The application was set up within the chosen IDE, and a new blank Android project was created. CVLiBG was integrated by adding it to the project's dependencies inside the \texttt{build.gradle.kts} file. (see Appendix~\ref{mobileInstall} for the integration of CVLiBG into Android projects).
 
 
+\subsection{Activities, fragments and navigation}
+This application utilizes a single Android \texttt{AppCompatActivity} hosting multiple fragments, each providing different functionality. This is achieved using \texttt{NavHostFragment}\footnote{NavHostFragment: \url{https://developer.android.com/reference/androidx/navigation/fragment/NavHostFragment}}, which allows switching between multiple fragments. This approach also allows sharing a single implementation of bottom navigation buttons.
 
-\subsection{DetailsFragment}
+Navigation host fragment utilizes \texttt{NavigationGraph}, an \texttt{.xml} file defining fragments and transitions between them. 
+
+The application is mostly made up of three main fragments, which the navigation host fragment switches between: camera, settings, and search fragments. All fragments share a single activity layout, which is set up in such a way that the navigation buttons at the bottom are transparent, and the current fragment fills the whole screen.
+
+Furthermore, additional fragments, such as inventory, role, and character, describing the current game state are placed on top of the main activity's fragment container. This allows all other fragments to see and use the functionality of these fragments.
+
+Lastly, as the main activity will use the camera, it is necessary to request permission for using it, a helper method \texttt{CommonUtils.checkCameraPermission()} was used. Likewise, these permissions must be added to the \texttt{AndroidManifest.xml}.
+
+% =============================
+\subsection{Services and detector registry}
+This application uses CVLiBG's services for loading asset files containing game specific information. Instead of coding each card into the application, a set of \texttt{.json} files is used. These files define each card's title, description, image, etc.
+
+\texttt{CardDetailsService} is derived from the template \texttt{AssetService} and its data class \texttt{CardDetail}. These data objects contain specific information for the given card. Loaded files are located in the \texttt{details/} directory under the project's asset folder. For the convenience of manually editing these files, cards were separated into different files based on their type (weapons, characters, etc.)
+
+\texttt{Class2LinkService} also uses the \texttt{AssetService} and employs a simple data class, \texttt{Class2Link}. The purpose of this service is to translate class integer indexes from the results of the detector into human readable string ids. These ids are used instead of integer values for the \texttt{CardDetail}. This allows for a more readable and manageable system. Card details also contain links to related cards. Without this "translation layer", it would be necessary to remember which integer value belongs to which card. Furthermore, if the integers changed, for example, by adding a new class, the card details would have to be rewritten. 
+
+\texttt{SettingsService} uses the template \texttt{ConfigService} and \texttt{UserPreferences} as its data class. Its purpose is to provide common application settings, such as language and font size. Furthermore, this application allows users to choose which detector should be used, as some hardware configurations might benefit more from Android's Android's Neural Networks API library. This option is also paired with the \texttt{DetectorRegistry} to ensure that incompatible models and detectors will not be used.
+
+\texttt{GameStateService} utilizes the template \texttt{StorageService} and its \texttt{GameState} data class. This service is mostly used to store the current game state, such as the inventory, role, and character used by the player.
+
+% =============================
+\subsection{Inventory and shared game state }
+To further help players, an option to add cards to the "inventory" was added. This allows players to store cards they "scanned" or searched for. Action cards and long effect cards, such as weapons, can be added to the inventory. Whereas roles and characters can be set so that players can quickly look them up without the need to search for them in the inventory.
+
+However, actions such as adding a card to the inventory or changing the current character require communication between fragments. For example, the fragment showing details of the card can add a card to the inventory, and the inventory fragment must react to these changes. 
+
+This was achieved using Android's \texttt{ViewModels}\footnote{: \url{https://developer.android.com/topic/libraries/architecture/viewmodel}} and \texttt{StateFlow}\footnote{StateFlow: \url{https://developer.android.com/kotlin/flow/stateflow-and-sharedflow}}. View models allow a fragment's data to survive rotations and other view destroying events. Likewise, the \texttt{activityViewModel} provides the same functionalities and allows other fragments to reuse and share the same model, essentially providing a way to communicate with each other as long as they are under the same activity. This view model contains \texttt{StateFlow} with the current inventory, character, role, or flags for hiding and showing inventory. 
+
+Inventory fragment reacts to these changes using the \texttt{collect()} method. This ensures that changes made in a different fragment or on a different thread will be correctly reacted to by the fragments.
+
+% =============================
+\subsection{Camera fragment}
+The fragment hosting the camera is the main point of this application. It hosts the camera preview, \texttt{BangDetectionOverlay}, and metrics overlay. It is implemented by the \texttt{CameraFragment}.
+
+The camera control is fully managed by the \texttt{CameraController}. The controller is placed inside the \texttt{ViewModel} to preserve its state, and only the \texttt{start()} method is called on each view creation. This allows the \texttt{CameraController} to remain unchanged when the view is destroyed or recreated. Likewise, the image analyzer is set up in a similar manner.
+
+The results of the analysis are collected and passed to the \texttt{BangDetectionOverlay}, a subclass of the \texttt{DetectionOverlay} for this specific game.
+
+Furthermore, fragment supports both realtime and detailed analysis modes. By default, a realtime analysis is performed on each frame, allowing users to click onto detections, which will bring them to the details of each card. 
+
+Switching into detailed mode will keep the camera preview active until the results arrive. After new results with detailed analysis are collected by the fragment, the detection overlay will display these results, and the camera controller will stop.
+
+This is not part of the CVLiBG, as some developers might want to implement this functionality differently and switch to another fragment. To allow such behavior, it is necessary to stop the camera controller manually, as in this case.
+
+Detailed mode also allows clicking on the detected card, but it also enables the inventory from which cards can be used.
+
+% =====================================================================================
+
+% =====================================================================================
+
+\subsection{Card details}
 \label{DetailsFragment}
-Details fragment loads values from the loaded JSON files and displays its contents. This is achieved with \texttt{CardDetailsService}, which uses the template \texttt{AssetService} and the \texttt{CardDetail} data class. Each object contains an \texttt{id} element, which is used as a key for the service. This link system also allows defining other IDs in the list of string ids, the \texttt{links} field. These links are translated as clickable objects, moving the user to another details card. 
+Card details is a screen, or fragment presented to the user after interacting with the detected card. This screen contains information about the card. Small games, such as Bang!, can implement each detail card as a separate custom screen. However, some games can contain hundreds of different items or cards, and creating a custom screen for each of these items would be unreasonable.
+
+\texttt{CardDetailsFragment} solves this by utilizing services and dynamically loading details for the given card. These values are loaded from the \texttt{.json} files and are loaded as separate card objects, which can be accessed later by the \texttt{CardDetailsService}. This approach uses a single fragment and fills it with details from the loaded JSON object. 
 
 \begin{figure}[hbt]
 	\centering
@@ -121,10 +131,28 @@ Details fragment loads values from the loaded JSON files and displays its conten
 	\label{DetailsFragmentScheme}
 \end{figure}
 
-\subsection{SettingsFragment}
+Cards can have a links field containing string link ids used for creating related card or note links. For example, the Figure~\ref{DetailsFragmentScheme} contains a related link to the symbols on the card, as well as the note: "How is the range calculated?". This note is not part of the game, it is a custom note added to help players with the confusion. 
+
+
+
+% ======================================
+\subsection{Card search}
+Card recognition through the camera is the primary interaction method of the application. However, the application also provides a manual card search. This screen serves as a fallback mechanism in situations where the card cannot be detected reliably, for example due to poor lighting.
+
+The search functionality also aims to reduce disruption during gameplay. If another player plays a card and the user wants to read, the card can be searched manually without asking the other player to show the card again by placing the smartphone on top of the card. 
+
+Search was implemented using Android's \texttt{RecyclerView}\footnote{RecyclerView: \url{https://developer.android.com/develop/ui/views/layout/recyclerview}} and \texttt{SearchView}\footnote{SearchView: \url{https://developer.android.com/reference/android/widget/SearchView}}, which allowed simple integration by loading images from the \texttt{CardDetailsService}.
+
+
+% ======================================
+\subsection{Settings and Benchmark}
 The last fragment consists of UI elements for interacting with the \texttt{settingsService}. This class uses the template \texttt{ConfigService} with its data class \texttt{UserPreferences}. This service is used to store and load values, such as the application's language, selected detector, font size, etc.
 
+Settings also contain a link to the \texttt{BenchmarkFragment}. This fragment utilizes CVLiBG's \texttt{PerformanceBenchmark} for testing inference latency of different detectors.
 
-% ===========================================================================================
-
-% ===========================================================================================
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=0.8\textwidth]{obrazky-figures/application_screenshot.pdf}
+	\caption{Screenshot of the final application.}
+	\label{DetailsFragmentScheme}
+\end{figure}
