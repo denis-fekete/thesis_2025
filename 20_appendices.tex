@@ -49,23 +49,23 @@ Computer Vision Library For Board Games is compiled with \textbf{JVM target 11} 
 
 To include the library in the Android project, it is necessary to add the Jitpack repository. This is done inside the \textbf{settings.gradle.kts} file, in the project's root folder:
 \begin{verbatim}
-    dependencyResolutionManagement {
-        repositories {
-            mavenCentral()
-            maven { url = uri("https://jitpack.io") }
-        }
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
+}
 \end{verbatim}
 
 Next, add the library dependency to the module's \textbf{build.gradle.kts} configuration file. 
 \begin{verbatim}
-    dependencies {
-        implementation("com.github.denis-fekete:cvlibg:1.0.0")
-        implementation("com.github.denis-fekete:cvlibg-yolo-onnx:1.0.0")
-    }
+dependencies {
+    implementation("com.github.denis-fekete:cvlibg:1.0.0")
+    implementation("com.github.denis-fekete.cvlibg:cvlibg-yolo-onnx:1.0.0")
+}
 \end{verbatim}
 
-The \textbf{1.0.0} tag should be replaced with the desired version, which can be found at: \url{https://jitpack.io/#denis-fekete/computer_vision_library_for_board_games}
+The \textbf{1.0.0} tag should be replaced with the desired version, which can be found at: \url{https://jitpack.io/#denis-fekete/cvlibg}
 
 % =======================================================================================
 
